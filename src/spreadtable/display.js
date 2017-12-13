@@ -15,6 +15,9 @@ export default {
             const displayColumns = this.getDisplayColumns()
             const displayRows = this.getDisplayRows()
             const displayCells = this.getDisplayCells(displayRows, displayColumns)
+            if (this.focusCell) {
+                
+            }
             return { displayColumns, displayRows, displayCells }
         },
         getDisplayColumns() {
@@ -25,7 +28,7 @@ export default {
                 if (!column.hidden) {
                     const width = column.width
                     if (startX + width >= config.width.serial && startX < canvasWidth) {
-                        const columnClone = Object.assign({}, column, { x: startX, width })
+                        const columnClone = { ...column, x: startX, width }
                         temp.push(columnClone)
                     }
                     startX += width
@@ -40,7 +43,7 @@ export default {
             let startY = config.height.columns + offset[1]
             for (const row of allRows) {
                 if (startY + row.height >= config.height.columns && startY < canvasHeight) {
-                    const rowClone = Object.assign({}, row, { y: startY })
+                    const rowClone = { ...row, y: startY }
                     temp.push(rowClone)
                 } else if (startY >= canvasHeight) {
                     break
@@ -50,8 +53,19 @@ export default {
             this.display.rows = [...temp]
             return temp
         },
-        getDisplayCells() {
+        getDisplayCells(displayRows, displayColumns) {
+            const { allCells } = this
             const temp = []
+            for (const row of displayRows) {
+                const cellTemp = []
+                for (const column of displayColumns) {
+                    const cell = allCells[row.row][column.cell]
+                    const cellClone = { ...cell, x: column.x, row: row.row, y: row.y, width: column.width, height: row.height }
+                    cellTemp.push(cellClone)
+                }
+                temp.push(cellTemp)
+            }
+            this.display.cells = [...temp]
             return temp
         },
     },

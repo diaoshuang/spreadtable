@@ -1,7 +1,5 @@
-import Two from 'two.js'
 import config from './config'
 import utils from './utils'
-import { setTimeout } from 'timers'
 
 export default {
     methods: {
@@ -15,7 +13,7 @@ export default {
             if (dataSource && dataSource.length > 0) {
                 console.log(dataSource)
             } else {
-                for (let i = 0; i < 100; i += 1) {
+                for (let i = 0; i < 200; i += 1) {
                     const temp = []
                     const cellTemp = []
                     for (let j = 0; j < this.words.length; j += 1) {
