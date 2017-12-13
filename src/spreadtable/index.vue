@@ -1,7 +1,8 @@
 <template>
     <div ref="spreadtable" class="spreadtable" :style="containerStyle">
         <div class="toolbar">12312312</div>
-        <div>
+        <div class="spreadtable-main">
+            <div class="input-content" :style="inputStyles" ref="input" contenteditable="true" @input="setValueTemp" @blur="handleInputBlur" @keydown.tab.prevent @keydown.enter.prevent @keydown.esc.prevent></div>
             <canvas v-if="hasSize" ref="canvas" class="canvas-spreadtable" :width="canvasWidth" :height="canvasHeight" :style="`width:${canvasWidth}px;height:${canvasHeight}px;`"></canvas>
             <div class="horizontal-container" style="width:20px" @click="scroll($event,0)">
                 <div class="scroll-bar-horizontal" ref="horizontal" @mousedown="dragMove($event,0)" :style="{width:horizontalBar.size+'px',left:horizontalBar.x+'px'}">
@@ -49,6 +50,8 @@ export default {
             isEditing: false,
             focusCell: [0, 0],
             selectArea: null,
+            inputStyles: {},
+            valueTemp: '',
         }
     },
     computed: {
@@ -69,6 +72,13 @@ export default {
         },
         hasSize() {
             return this.canvasWidth > 0 && this.canvasHeight > 0
+        },
+    },
+    watch: {
+        focusCell() {
+            this.hideInput()
+            this.$refs.input.innerHTML = ''
+            this.focusInput()
         },
     },
     created() {
@@ -119,18 +129,75 @@ export default {
             let focusRow = null
             let focusColumn = null
             if (x >= firstRowIndex && x <= lastRowIndex) {
-                focusRow = {
-                    y: this.display.rows[x - firstRowIndex].y,
-                    height: this.display.rows[x - firstRowIndex].height,
+                let height = this.display.rows[x - firstRowIndex].height
+                let y = this.display.rows[x - firstRowIndex].y
+                if (this.selectArea) {
+                    if (this.selectArea.type === 1 || this.selectArea.type === 2) {
+                        y -= this.selectArea.height - height
+                    }
+                    height = this.selectArea.height
                 }
+                focusRow = { y, height }
             }
             if (y >= firstCellIndex && y <= lastCellIndex) {
-                focusColumn = {
-                    x: this.display.columns[y - firstCellIndex].x,
-                    width: this.display.columns[y - firstCellIndex].width,
+                let width = this.display.columns[y - firstCellIndex].width
+                let x = this.display.columns[y - firstCellIndex].x
+                if (this.selectArea) {
+                    if (this.selectArea.type === 2 || this.selectArea.type === 3) {
+                        x -= this.selectArea.width - width
+                    }
+                    width = this.selectArea.width
                 }
+                focusColumn = { x, width }
             }
             return { focusRow, focusColumn }
+        },
+        handleInputBlur() {
+
+        },
+        setValueTemp(e) {
+            this.valueTemp = e.target.innerText
+            const focusCell = this.getDisplayCell(this.focusCell)
+            let { x, y } = focusCell
+            if (x < config.width.serial) {
+                this.offset.x += config.width.serial - x
+                x = config.width.serial
+            }
+            if (y < config.height.columns) {
+                this.offset.y += config.height.columns - y
+                y = config.height.columns
+            }
+            this.showInput(x, y, focusCell.width, focusCell.height)
+        },
+        showInput(x, y, width, height) {
+            this.isEditing = true
+            let maxWidth = this.canvasWidth - x - 2
+            if (this.canvasWidth - x - 2 < width - 3) {
+                this.offset[0] -= width
+                this.painted()
+                maxWidth += width
+            }
+
+            this.inputStyles = {
+                position: 'absolute',
+                top: `${y + 3}px`,
+                left: `${x + 3}px`,
+                minWidth: `${width - 3}px`,
+                maxWidth: `${maxWidth}px`,
+                minHeight: `${height - 3}px`,
+            }
+        },
+        hideInput() {
+            this.isEditing = false
+            this.inputStyles = {
+                top: '-10000px',
+                left: '-10000px',
+            }
+        },
+        focusInput() {
+            setTimeout(() => {
+                this.$refs.input.focus()
+            }, 0)
         },
     },
 }
@@ -142,9 +209,24 @@ export default {
   overflow: hidden;
   margin: 0;
   padding: 0;
-  canvas {
-    border: 1px solid #bdbbbc;
-    user-select: none;
+  .spreadtable-main {
+    position: relative;
+    canvas {
+      border: 1px solid #bdbbbc;
+      user-select: none;
+    }
+    .input-content {
+      top: -10000px;
+      left: -10000px;
+      outline: none;
+      color: #666;
+      border-radius: 0px;
+      font-size: 12px;
+      position: fixed;
+      background-color: #fff;
+      z-index: 10;
+      line-height: 22px;
+    }
   }
 }
 </style>

@@ -91,22 +91,24 @@ export default {
             if (this.isDown && e.target.classList.contains('canvas-spreadtable')) {
                 const eX = e.offsetX
                 const eY = e.offsetY
-                const { x, y, width, height, row, cell } = this.getDisplayCell(this.focusCell)
+                const { x, y, width, height, row, cell: cellIndex } = this.getDisplayCell(this.focusCell)
                 if (eX >= x && eX <= x + width && eY >= y && eY <= y + height) {
                     this.selectArea = null
+                    this.painted()
                 } else {
                     const cell = this.getCellAt(eX, eY)
                     if (cell) {
                         if (cell.x >= x && cell.y >= y) {
-                            this.selectArea = { x, y, width: (cell.x - x) + cell.width, height: (cell.y - y) + cell.height, cell, row, offset: { ...this.offset } }
+                            this.selectArea = { type: 0, x, y, width: (cell.x - x) + cell.width, height: (cell.y - y) + cell.height, cellIndex, row, offset: [...this.offset] }
                         } else if (cell.x >= x && cell.y <= y) {
-                            this.selectArea = { x, y: cell.y, width: (cell.x - x) + cell.width, height: (y - cell.y) + height, row: cell.row, cell, offset: { ...this.offset } }
+                            this.selectArea = { type: 1, x, y: cell.y, width: (cell.x - x) + cell.width, height: (y - cell.y) + height, row: cell.row, cellIndex, offset: [...this.offset] }
                         } else if (cell.x <= x && cell.y <= y) {
-                            this.selectArea = { x: cell.x, y: cell.y, width: (x - cell.x) + width, height: (y - cell.y) + height, row: cell.row, cell: cell.cell, offset: { ...this.offset } }
+                            this.selectArea = { type: 2, x: cell.x, y: cell.y, width: (x - cell.x) + width, height: (y - cell.y) + height, row: cell.row, cellIndex: cell.cell, offset: [...this.offset] }
                         } else if (cell.x <= x && cell.y >= y) {
-                            this.selectArea = { x: cell.x, y, width: (x - cell.x) + width, height: (cell.y - y) + cell.height, row, cell: cell.cell, offset: { ...this.offset } }
+                            this.selectArea = { type: 3, x: cell.x, y, width: (x - cell.x) + width, height: (cell.y - y) + cell.height, row, cellIndex: cell.cell, offset: [...this.offset] }
                         }
                         this.selectArea.rowCount = Math.abs(cell.row - row) + 1
+                        this.selectArea.cellCount = Math.abs(cell.cell - cellIndex) + 1
                         this.painted()
                     }
                 }

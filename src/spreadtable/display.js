@@ -15,8 +15,11 @@ export default {
             const displayColumns = this.getDisplayColumns()
             const displayRows = this.getDisplayRows()
             const displayCells = this.getDisplayCells(displayRows, displayColumns)
-            if (this.focusCell) {
-                
+            if (this.selectArea) {
+                const [x, y] = this.selectArea.offset
+                this.selectArea.x -= x - this.offset[0]
+                this.selectArea.y -= y - this.offset[1]
+                this.selectArea.offset = [...this.offset]
             }
             return { displayColumns, displayRows, displayCells }
         },

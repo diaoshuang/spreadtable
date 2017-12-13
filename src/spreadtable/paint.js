@@ -38,12 +38,11 @@ export default {
             const focusRow = _focusRow
             const focusColumn = _focusColumn
 
-            if (focusCell) {
-                if (this.selectArea) {
-                    this.paintFocusAndSelect(ctx, focusCell, this.selectArea)
-                } else {
-                    this.paintFocus(ctx, focusCell)
-                }
+
+            if (this.selectArea) {
+                this.paintFocusAndSelect(ctx, focusCell, this.selectArea)
+            } else if (focusCell) {
+                this.paintFocus(ctx, focusCell)
             }
 
             ctx.fillStyle = '#f0f0f0'
