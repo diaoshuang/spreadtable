@@ -1,6 +1,6 @@
 <template>
     <div ref="spreadtable" class="spreadtable" :style="containerStyle">
-        <div class="toolbar">12312312</div>
+        <div class="toolbar">表格！！！！！</div>
         <div class="spreadtable-main">
             <div class="input-content" :style="inputStyles" ref="input" contenteditable="true" @input="setValueTemp" @blur="handleInputBlur" @keydown.tab.prevent @keydown.enter.prevent @keydown.esc.prevent></div>
             <canvas v-if="hasSize" ref="canvas" class="canvas-spreadtable" :width="canvasWidth" :height="canvasHeight" :style="`width:${canvasWidth}px;height:${canvasHeight}px;`"></canvas>
@@ -131,27 +131,20 @@ export default {
             const lastCellIndex = this.display.columns[this.display.columns.length - 1].cell
             let focusRow = null
             let focusColumn = null
-            if (x >= firstRowIndex && x <= lastRowIndex) {
-                let height = this.display.rows[x - firstRowIndex].height
-                let y = this.display.rows[x - firstRowIndex].y
-                if (this.selectArea) {
-                    if (this.selectArea.type === 1 || this.selectArea.type === 2) {
-                        y -= this.selectArea.height - height
-                    }
-                    height = this.selectArea.height
+            if (this.selectArea) {
+                focusColumn = { x: this.selectArea.x, width: this.selectArea.width }
+                focusRow = { y: this.selectArea.y, height: this.selectArea.height }
+            } else {
+                if (y >= firstCellIndex && y <= lastCellIndex) {
+                    const width = this.display.columns[y - firstCellIndex].width
+                    const x = this.display.columns[y - firstCellIndex].x
+                    focusColumn = { x, width }
                 }
-                focusRow = { y, height }
-            }
-            if (y >= firstCellIndex && y <= lastCellIndex) {
-                let width = this.display.columns[y - firstCellIndex].width
-                let x = this.display.columns[y - firstCellIndex].x
-                if (this.selectArea) {
-                    if (this.selectArea.type === 2 || this.selectArea.type === 3) {
-                        x -= this.selectArea.width - width
-                    }
-                    width = this.selectArea.width
+                if (x >= firstRowIndex && x <= lastRowIndex) {
+                    const height = this.display.rows[x - firstRowIndex].height
+                    const y = this.display.rows[x - firstRowIndex].y
+                    focusRow = { y, height }
                 }
-                focusColumn = { x, width }
             }
             return { focusRow, focusColumn }
         },

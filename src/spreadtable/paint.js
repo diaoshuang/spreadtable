@@ -97,6 +97,11 @@ export default {
             ctx.lineTo(utils.pxFix(config.width.serial), utils.pxFix(config.height.columns))
             ctx.lineTo(0, utils.pxFix(config.height.columns))
             ctx.stroke()
+
+            if (focusRow.y <= config.height.columns && focusColumn.x <= config.width.serial) {
+                ctx.fillStyle = '#237245'
+                ctx.fillRect(config.width.serial - 1, config.height.columns - 1, 2, 2)
+            }
         },
         paintText(ctx, x, y, row, maxWidth) {
             if (row.length > 1) {
@@ -154,7 +159,15 @@ export default {
                 ctx.lineWidth = 2
                 ctx.strokeStyle = '#237245'
                 if (focusRow) {
-                    if (focusCell) {
+                    if (this.selectArea) {
+                        if (this.selectArea.x <= config.width.serial && this.selectArea.x + this.selectArea.width >= config.width.serial) {
+                            ctx.moveTo(config.width.serial, focusRow.y - 1)
+                            ctx.lineTo(config.width.serial, focusRow.y + focusRow.height + 2)
+                        } else {
+                            ctx.moveTo(config.width.serial, focusRow.y)
+                            ctx.lineTo(config.width.serial, focusRow.y + focusRow.height)
+                        }
+                    } else if (focusCell) {
                         if (focusCell.x <= config.width.serial) {
                             ctx.moveTo(config.width.serial, focusRow.y - 1)
                             ctx.lineTo(config.width.serial, focusRow.y + focusRow.height + 2)
@@ -168,7 +181,15 @@ export default {
                     }
                 }
                 if (focusColumn) {
-                    if (focusCell) {
+                    if (this.selectArea) {
+                        if (this.selectArea.y <= config.height.columns && this.selectArea.y + this.selectArea.height >= config.height.columns) {
+                            ctx.moveTo(focusColumn.x - 1, config.height.columns)
+                            ctx.lineTo(focusColumn.x + focusColumn.width + 2, config.height.columns)
+                        } else {
+                            ctx.moveTo(focusColumn.x, config.height.columns)
+                            ctx.lineTo(focusColumn.x + focusColumn.width, config.height.columns)
+                        }
+                    } else if (focusCell) {
                         if (focusCell.y <= config.height.columns) {
                             ctx.moveTo(focusColumn.x - 1, config.height.columns)
                             ctx.lineTo(focusColumn.x + focusColumn.width + 2, config.height.columns)
