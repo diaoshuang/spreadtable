@@ -16,12 +16,13 @@ export default {
 
             this.paintOuter(ctx, displayRows, displayColumns, displayCells)
         },
-        paintOuter(ctx, displayRows, displayColumns) {
+        paintOuter(ctx, displayRows, displayColumns, displayCells) {
             const { canvasWidth, canvasHeight } = this
             // column  纵线
             ctx.beginPath()
             ctx.lineWidth = 1
             ctx.strokeStyle = '#cecece'
+            ctx.textAlign = 'center'
             for (const { x } of displayColumns) {
                 ctx.moveTo(utils.pxFix(x), config.height.columns)
                 ctx.lineTo(utils.pxFix(x), canvasHeight)
@@ -38,7 +39,9 @@ export default {
             const focusRow = _focusRow
             const focusColumn = _focusColumn
 
+            this.paintData(ctx, displayCells)
 
+            ctx.textAlign = 'center'
             if (this.selectArea) {
                 this.paintFocusAndSelect(ctx, focusCell, this.selectArea)
             } else if (focusCell) {
@@ -67,7 +70,7 @@ export default {
                 this.paintText(ctx, x + utils.half(width), 15, [title])
             }
             // row 横线
-            for (const { y, height, row } of displayRows) {
+            for (const { y, row } of displayRows) {
                 ctx.moveTo(0, utils.pxFix(y))
                 ctx.lineTo(config.width.serial, utils.pxFix(y))
                 this.paintText(ctx, utils.half(config.width.serial), y + 14, [row + 1])
@@ -95,9 +98,18 @@ export default {
             ctx.lineTo(0, utils.pxFix(config.height.columns))
             ctx.stroke()
         },
-        paintText(ctx, x, y, row) {
-            for (let b = 0; b < row.length; b += 1) {
-                ctx.fillText(row[b], x, y + (b * 15))
+        paintText(ctx, x, y, row, maxWidth) {
+            if (row.length > 1) {
+                for (let b = 0; b < row.length; b += 1) {
+                    ctx.fillText(row[b], x, y + (b * 15))
+                }
+            } else if (maxWidth) {
+                const texts = utils.getTextLine(ctx, row[0], maxWidth)
+                if (texts) {
+                    ctx.fillText(texts[0], x, y, maxWidth)
+                }
+            } else {
+                ctx.fillText(row[0], x, y)
             }
         },
         paintFocus(ctx, cell) {
@@ -107,6 +119,11 @@ export default {
                 ctx.lineWidth = 2
                 ctx.strokeStyle = '#237245'
                 ctx.strokeRect(cell.x, cell.y, cell.width + 1, cell.height + 1)
+                ctx.strokeStyle = '#ffffff'
+                ctx.lineWidth = 1
+                ctx.strokeRect(utils.pxFix(cell.x + cell.width) - 2, utils.pxFix(cell.y + cell.height) - 2, 6, 6)
+                ctx.fillStyle = '#237245'
+                ctx.fillRect((cell.x + cell.width) - 1, (cell.y + cell.height) - 1, 5, 5)
                 ctx.stroke()
             }
         },
@@ -120,7 +137,14 @@ export default {
                 ctx.fillStyle = 'rgba(0,0,0,0.1)'
                 ctx.fillRect(area.x + 2, area.y + 2, area.width - 3, area.height - 3)
                 ctx.fillStyle = '#fff'
-                ctx.fillRect(cell.x + 1, cell.y + 1, cell.width - 1, cell.height - 1)
+                if (cell) {
+                    ctx.fillRect(cell.x + 1, cell.y + 1, cell.width - 1, cell.height - 1)
+                }
+                ctx.strokeStyle = '#ffffff'
+                ctx.lineWidth = 1
+                ctx.strokeRect(utils.pxFix(area.x + area.width) - 2, utils.pxFix(area.y + area.height) - 2, 6, 6)
+                ctx.fillStyle = '#237245'
+                ctx.fillRect((area.x + area.width) - 1, (area.y + area.height) - 1, 5, 5)
                 ctx.stroke()
             }
         },
@@ -159,6 +183,35 @@ export default {
                 }
                 ctx.stroke()
             }
+        },
+        paintData(ctx, displayCells) {
+            ctx.beginPath()
+            ctx.font = 'normal 12px PingFang SC'
+            for (const rows of displayCells) {
+                let index = 0
+                for (const item of rows) {
+                    if (item.paintText) {
+                        if (item.type === 'text') {
+                            ctx.textAlign = 'left'
+                            let maxWidth = null
+                            if (index < rows.length - 1 && (rows[index + 1].content || rows[index + 1].content === 0)) {
+                                maxWidth = item.width
+                            }
+                            ctx.fillStyle = '#fff'
+                            if (!maxWidth) {
+                                ctx.fillRect(item.x + 2, item.y + 1, ctx.measureText(item.paintText).width, item.height - 1)
+                            }
+                            ctx.fillStyle = '#333'
+                            this.paintText(ctx, item.x + 2, item.y + 13, [item.paintText], maxWidth)
+                        } else {
+                            ctx.textAlign = 'right'
+                            this.paintText(ctx, item.x + item.width + 2, item.y + 13, [item.paintText])
+                        }
+                    }
+                    index += 1
+                }
+            }
+            ctx.stroke()
         },
     },
 }

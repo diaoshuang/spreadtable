@@ -72,6 +72,7 @@ export default {
             }
         },
         handleMousedown(e) {
+            this.save()
             if (e.target.classList.contains('canvas-spreadtable')) {
                 this.isDown = true
                 const eX = e.offsetX

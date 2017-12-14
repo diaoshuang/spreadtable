@@ -88,7 +88,6 @@ export default {
                 ctx.backingStorePixelRatio || 1
 
             this.ratio = (window.devicePixelRatio || 1) / backingStore
-            ctx.textAlign = 'center'
             ctx.lineWidth = 1
             ctx.font = 'normal 12px PingFang SC'
             ctx.textBaseline = 'middle'

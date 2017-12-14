@@ -83,6 +83,9 @@ export default {
     },
     created() {
         this.data = this.initData(this.dataSource)
+        this.$on('updateItem', (data) => {
+            this.saveItem(data, true)
+        })
     },
     mounted() {
         this.init()
@@ -198,6 +201,34 @@ export default {
             setTimeout(() => {
                 this.$refs.input.focus()
             }, 0)
+        },
+        save() {
+            if (this.isEditing) {
+                if (this.$refs.input.innerText !== this.allCells[this.focusCell[0]][this.focusCell[1]].content) {
+                    this.$emit('updateItem', {
+                        anchor: [...this.focusCell],
+                        value: this.$refs.input.innerText,
+                    })
+                }
+            }
+        },
+        saveItem(data) {
+            const value = data.value
+            const cell = this.getDisplayCell(data.anchor)
+            if (cell.type === 'number') {
+                const re = /^(([1-9][0-9]*\.[0-9][0-9]*)|([0]\.[0-9][0-9]*)|([1-9][0-9]*)|([0]{1}))$/
+                if (value && !re.test(value)) {
+                    cell.type = 'text'
+                }
+            }
+            this.data[data.anchor[0]][data.anchor[1]] = value
+            this.setCellItemByKey(data.anchor, value)
+            this.painted()
+            this.$emit('updateValue', [{ rowData: this.data[data.anchor[0]], items: [{ anchor: data.anchor, value }] }])
+        },
+        setCellItemByKey(anchor, value) {
+            this.allCells[anchor[0]][anchor[1]].content = value
+            this.allCells[anchor[0]][anchor[1]].paintText = [value]
         },
     },
 }
