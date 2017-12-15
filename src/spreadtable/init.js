@@ -54,6 +54,7 @@ export default {
             return data
         },
         initSize() {
+            const ratio = this.ratio
             const containerWidth = this.$refs.spreadtable.offsetWidth
             const containerHeight = this.$refs.spreadtable.offsetHeight
             this.canvasWidth = containerWidth - config.width.scroll
@@ -61,14 +62,14 @@ export default {
             this.points.columns = [
                 0,
                 0,
-                this.canvasWidth,
-                config.height.columns,
+                this.canvasWidth * ratio,
+                config.height.columns * ratio,
             ]
             this.points.serial = [
                 0,
                 0,
-                config.width.serial,
-                this.canvasHeight,
+                config.width.serial * ratio,
+                this.canvasHeight * ratio,
             ]
         },
         initCanvas() {

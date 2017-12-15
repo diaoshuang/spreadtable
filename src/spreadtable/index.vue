@@ -1,6 +1,6 @@
 <template>
     <div ref="spreadtable" class="spreadtable" :style="containerStyle">
-        <div class="toolbar">表格！！！！！</div>
+        <div class="toolbar">表格！！！！！{{ratio}}</div>
         <div class="spreadtable-main">
             <div class="input-content" :style="inputStyles" ref="input" contenteditable="true" @input="setValueTemp" @blur="handleInputBlur" @keydown.tab.prevent @keydown.enter.prevent @keydown.esc.prevent></div>
             <canvas v-if="hasSize" ref="canvas" class="canvas-spreadtable" :width="canvasWidth" :height="canvasHeight" :style="`width:${canvasWidth}px;height:${canvasHeight}px;`"></canvas>
@@ -44,6 +44,7 @@ export default {
             canvasWidth: 0,
             canvasHeight: 0,
             bodyWidth: 0,
+            bodyHeight: 0,
             offset: [0, 0],
             words: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'],
             canvas: null,

@@ -26,5 +26,7 @@ export default {
         row.push(temp)
         return row
     },
-
+    isInRegion(point, startPoint, endPoint) {
+        return point[0] > startPoint[0] && point[0] < endPoint[0] && point[1] > startPoint[1] && point[1] < endPoint[1]
+    },
 }

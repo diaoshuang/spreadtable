@@ -1,4 +1,5 @@
 import config from './config'
+import utils from './utils'
 
 export default {
     data() {
@@ -85,6 +86,14 @@ export default {
                         this.painted()
                         this.$emit('focus', cell.rowData)
                     }
+                } else if (utils.isInRegion([eX, eY], [0, 0], [config.width.serial - 2, config.height.columns - 2])) {
+                    this.focusCell = [0, 0]
+                    this.offset = [0, 0]
+                    this.selectArea = { type: 0, x: config.width.serial, y: config.height.columns, width: Infinity, height: Infinity, cell: 0, row: 0, offset: [...this.offset] }
+                    this.selectArea.rowCount = Infinity
+                    this.selectArea.cellCount = Infinity
+                    this.painted()
+                    this.$emit('focus', this.allRows[0].rowData)
                 }
             }
         },
@@ -100,13 +109,13 @@ export default {
                     const cell = this.getCellAt(eX, eY)
                     if (cell) {
                         if (cell.x >= x && cell.y >= y) {
-                            this.selectArea = { type: 0, x, y, width: (cell.x - x) + cell.width, height: (cell.y - y) + cell.height, cellIndex, row, offset: [...this.offset] }
+                            this.selectArea = { type: 0, x, y, width: (cell.x - x) + cell.width, height: (cell.y - y) + cell.height, cell: cellIndex, row, offset: [...this.offset] }
                         } else if (cell.x >= x && cell.y <= y) {
-                            this.selectArea = { type: 1, x, y: cell.y, width: (cell.x - x) + cell.width, height: (y - cell.y) + height, row: cell.row, cellIndex, offset: [...this.offset] }
+                            this.selectArea = { type: 1, x, y: cell.y, width: (cell.x - x) + cell.width, height: (y - cell.y) + height, row: cell.row, cell: cellIndex, offset: [...this.offset] }
                         } else if (cell.x <= x && cell.y <= y) {
-                            this.selectArea = { type: 2, x: cell.x, y: cell.y, width: (x - cell.x) + width, height: (y - cell.y) + height, row: cell.row, cellIndex: cell.cell, offset: [...this.offset] }
+                            this.selectArea = { type: 2, x: cell.x, y: cell.y, width: (x - cell.x) + width, height: (y - cell.y) + height, row: cell.row, cell: cell.cell, offset: [...this.offset] }
                         } else if (cell.x <= x && cell.y >= y) {
-                            this.selectArea = { type: 3, x: cell.x, y, width: (x - cell.x) + width, height: (cell.y - y) + cell.height, row, cellIndex: cell.cell, offset: [...this.offset] }
+                            this.selectArea = { type: 3, x: cell.x, y, width: (x - cell.x) + width, height: (cell.y - y) + cell.height, row, cell: cell.cell, offset: [...this.offset] }
                         }
                         this.selectArea.rowCount = Math.abs(cell.row - row) + 1
                         this.selectArea.cellCount = Math.abs(cell.cell - cellIndex) + 1
