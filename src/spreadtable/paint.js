@@ -9,7 +9,7 @@ export default {
             this.doDraw(items)
         },
         clearPainted() {
-            this.canvas.clearRect(0, 0, this.canvasWidth, this.canvasHeight)
+            this.canvas.clearRect(0, 0, this.canvasWidth * this.ratio, this.canvasHeight * this.ratio)
         },
         doDraw({ displayRows, displayColumns, displayCells }) {
             const ctx = this.canvas
@@ -17,20 +17,20 @@ export default {
             this.paintOuter(ctx, displayRows, displayColumns, displayCells)
         },
         paintOuter(ctx, displayRows, displayColumns, displayCells) {
-            const { canvasWidth, canvasHeight } = this
-            // column  纵线
+            const { canvasWidth, canvasHeight, ratio } = this
             ctx.beginPath()
-            ctx.lineWidth = 1
+            ctx.lineWidth = 1 * ratio
             ctx.strokeStyle = '#cecece'
             ctx.textAlign = 'center'
-            for (const { x } of displayColumns) {
-                ctx.moveTo(utils.pxFix(x), config.height.columns)
-                ctx.lineTo(utils.pxFix(x), canvasHeight)
+            // column  纵线
+            for (const { realX: x, width } of displayColumns) {
+                ctx.moveTo(utils.pxFix((x + width) * ratio), config.height.columns * ratio)
+                ctx.lineTo(utils.pxFix((x + width) * ratio), canvasHeight * ratio)
             }
             // row 横线
-            for (const { y } of displayRows) {
-                ctx.moveTo(config.width.serial, utils.pxFix(y))
-                ctx.lineTo(canvasWidth, utils.pxFix(y))
+            for (const { realY: y, height } of displayRows) {
+                ctx.moveTo(config.width.serial * ratio, utils.pxFix((y + height) * ratio))
+                ctx.lineTo(canvasWidth * ratio, utils.pxFix((y + height) * ratio))
             }
             ctx.stroke()
 
@@ -54,61 +54,74 @@ export default {
 
             ctx.fillStyle = '#e0e0e0'
             if (focusRow) {
-                ctx.fillRect(0, focusRow.y, config.width.serial, focusRow.height)
+                ctx.fillRect(0, focusRow.y * ratio, config.width.serial * ratio, focusRow.height * ratio)
             }
             if (focusColumn) {
-                ctx.fillRect(focusColumn.x, 0, focusColumn.width, config.height.columns)
+                ctx.fillRect(focusColumn.x * ratio, 0, focusColumn.width * ratio, config.height.columns * ratio)
             }
             ctx.beginPath()
-            ctx.lineWidth = 1
+            ctx.lineWidth = 1 * ratio
             ctx.strokeStyle = '#cecece'
             ctx.fillStyle = '#333333'
-            for (const { x, title, width } of displayColumns) {
-                ctx.moveTo(utils.pxFix(x), 0)
-                ctx.lineTo(utils.pxFix(x), config.height.columns)
-                this.paintText(ctx, x + utils.half(width), 15, [title])
+            for (const { realX: x, title, width } of displayColumns) {
+                ctx.moveTo(utils.pxFix((x + width) * ratio), 0)
+                ctx.lineTo(utils.pxFix((x + width) * ratio), config.height.columns * ratio)
+                this.paintText(ctx, (x + utils.half(width)) * ratio, 15 * ratio, [title])
             }
             // row 横线
-            for (const { y, row } of displayRows) {
-                ctx.moveTo(0, utils.pxFix(y))
-                ctx.lineTo(config.width.serial, utils.pxFix(y))
-                this.paintText(ctx, utils.half(config.width.serial), y + 14, [row + 1])
+            for (const { realY: y, row, height } of displayRows) {
+                ctx.moveTo(0, utils.pxFix((y + height) * ratio))
+                ctx.lineTo(config.width.serial * ratio, utils.pxFix((y + height) * ratio))
+                this.paintText(ctx, utils.half(config.width.serial) * ratio, (y + 14) * ratio, [row + 1])
             }
             ctx.stroke()
 
+            if (this.isHoverRowDivideDown) {
+                ctx.beginPath()
+                ctx.strokeStyle = '#000'
+                ctx.moveTo(0, this.hoverRowDivide.y)
+                ctx.lineTo(this.canvasWidth, this.hoverRowDivide.y)
+                ctx.moveTo(0, this.hoverRowDivide.row.realY)
+                ctx.lineTo(this.canvasWidth, this.hoverRowDivide.row.realY)
+                ctx.stroke()
+            }
+
             ctx.beginPath()
             ctx.strokeStyle = '#bdbbbc'
-            ctx.moveTo(config.width.serial, utils.pxFix(config.height.columns))
-            ctx.lineTo(canvasWidth, utils.pxFix(config.height.columns))
-            ctx.moveTo(utils.pxFix(config.width.serial), config.height.columns)
-            ctx.lineTo(utils.pxFix(config.width.serial), canvasHeight)
+            ctx.moveTo(config.width.serial * ratio, utils.pxFix(config.height.columns * ratio))
+            ctx.lineTo(canvasWidth * ratio, utils.pxFix(config.height.columns * ratio))
+            ctx.moveTo(utils.pxFix(config.width.serial * ratio), config.height.columns * ratio)
+            ctx.lineTo(utils.pxFix(config.width.serial * ratio), canvasHeight * ratio)
             ctx.stroke()
 
             this.paintFocusRowAndColumnLine(ctx, focusRow, focusColumn, focusCell)
 
             ctx.fillStyle = '#fbfbfb'
-            ctx.fillRect(0, 0, config.width.serial, config.height.columns)
+            ctx.fillRect(0, 0, config.width.serial * ratio, config.height.columns * ratio)
 
             ctx.beginPath()
-            ctx.lineWidth = 1
+            ctx.lineWidth = 1 * ratio
             ctx.strokeStyle = '#cecece'
-            ctx.moveTo(utils.pxFix(config.width.serial), 0)
-            ctx.lineTo(utils.pxFix(config.width.serial), utils.pxFix(config.height.columns))
-            ctx.lineTo(0, utils.pxFix(config.height.columns))
+            ctx.moveTo(utils.pxFix(config.width.serial * ratio), 0)
+            ctx.lineTo(utils.pxFix(config.width.serial * ratio), utils.pxFix(config.height.columns * ratio))
+            ctx.lineTo(0, utils.pxFix(config.height.columns * ratio))
             ctx.stroke()
 
             if (focusRow && focusColumn && focusRow.y <= config.height.columns && focusColumn.x <= config.width.serial) {
                 ctx.fillStyle = '#237245'
-                ctx.fillRect(config.width.serial - 1, config.height.columns - 1, 2, 2)
+                ctx.fillRect((config.width.serial - 1) * ratio, (config.height.columns - 1) * ratio, 2 * ratio, 2 * ratio)
             }
 
             ctx.beginPath()
-            ctx.moveTo(config.width.serial - 3.5, 7)
-            ctx.lineTo(config.width.serial - 3.5, config.height.columns - 3.5)
-            ctx.lineTo(15, config.height.columns - 3.5)
+            ctx.moveTo((config.width.serial - 3.5) * ratio, 7 * ratio)
+            ctx.lineTo((config.width.serial - 3.5) * ratio, (config.height.columns - 3.5) * ratio)
+            ctx.lineTo(12 * ratio, (config.height.columns - 3.5) * ratio)
             ctx.closePath()
             ctx.strokeStyle = '#dfdfdf'
             ctx.fillStyle = '#dfdfdf'
+            if (this.selectArea && this.selectArea.width === Infinity && this.selectArea.height === Infinity) {
+                ctx.fillStyle = '#237245'
+            }
             ctx.fill()
             ctx.stroke()
         },
@@ -127,22 +140,24 @@ export default {
             }
         },
         paintFocus(ctx, cell) {
-            const { canvasWidth, canvasHeight } = this
-            if (cell.x + cell.width > config.width.serial && cell.y + cell.height > config.height.columns && cell.x < canvasWidth && cell.y < canvasHeight) {
+            const { canvasWidth, canvasHeight, ratio } = this
+            if (cell.realX + cell.width > config.width.serial && cell.realY + cell.height > config.height.columns && cell.realX < canvasWidth && cell.realY < canvasHeight) {
                 ctx.beginPath()
-                ctx.lineWidth = 2
+                ctx.lineWidth = 2 * ratio
                 ctx.strokeStyle = '#237245'
-                ctx.strokeRect(cell.x, cell.y, cell.width + 1, cell.height + 1)
-                ctx.strokeStyle = '#ffffff'
-                ctx.lineWidth = 1
-                ctx.strokeRect(utils.pxFix(cell.x + cell.width) - 2, utils.pxFix(cell.y + cell.height) - 2, 6, 6)
+                ctx.strokeRect(cell.realX * ratio, cell.realY * ratio, (cell.width + 1) * ratio, (cell.height + 1) * ratio)
+
+                // 右下角小点
+                ctx.fillStyle = '#ffffff'
+                ctx.lineWidth = 1 * ratio
+                ctx.fillRect(utils.pxFix(((cell.realX + cell.width) - 4) * ratio), utils.pxFix(((cell.realY + cell.height) - 4) * ratio), 7 * ratio, 7 * ratio)
                 ctx.fillStyle = '#237245'
-                ctx.fillRect((cell.x + cell.width) - 1, (cell.y + cell.height) - 1, 5, 5)
+                ctx.fillRect(((cell.realX + cell.width) - 3) * ratio, ((cell.realY + cell.height) - 3) * ratio, 6 * ratio, 6 * ratio)
                 ctx.stroke()
             }
         },
         paintFocusAndSelect(ctx, cell, area) {
-            const { canvasWidth, canvasHeight } = this
+            const { canvasWidth, canvasHeight, ratio } = this
             if (area.x + area.width > config.width.serial && area.y + area.height > config.height.columns && area.x < canvasWidth && area.y < canvasHeight) {
                 let width = area.width
                 let height = area.height
@@ -153,74 +168,100 @@ export default {
                     height = this.bodyHeight
                 }
                 ctx.beginPath()
-                ctx.lineWidth = 2
+                ctx.lineWidth = 2 * ratio
                 ctx.strokeStyle = '#237245'
-                ctx.strokeRect(area.x, area.y, width + 1, height + 1)
-                ctx.fillStyle = 'rgba(0,0,0,0.1)'
-                ctx.fillRect(area.x + 2, area.y + 2, width - 3, height - 3)
-                ctx.fillStyle = '#fff'
-                // focus cell
+                ctx.strokeRect(area.x * ratio, area.y * ratio, (width + 1) * ratio, (height + 1) * ratio)
+
                 if (cell) {
-                    ctx.fillRect(cell.x + 1, cell.y + 1, cell.width - 1, cell.height - 1)
+                    ctx.fillStyle = 'rgba(0,0,0,0.1)'
+                    let areaHeight = (cell.height - 1) * ratio
+                    if (area.rowCount === 1) {
+                        areaHeight = (cell.height - 3) * ratio
+                    }
+                    if (area.type === 0) {
+                        ctx.fillRect((area.x + cell.width + 1) * ratio, (area.y + 2) * ratio, (width - cell.width - 2) * ratio, areaHeight)
+                        if (area.rowCount !== 1) {
+                            ctx.fillRect((area.x + 2) * ratio, (area.y + cell.height + 1) * ratio, (width - 3) * ratio, (height - cell.height - 2) * ratio)
+                        }
+                    } else if (area.type === 1) {
+                        ctx.fillRect((area.x + cell.width + 1) * ratio, (cell.realY + 1) * ratio, (width - cell.width - 2) * ratio, areaHeight - 1)
+                        if (area.rowCount !== 1) {
+                            ctx.fillRect((area.x + 2) * ratio, (area.y + 2) * ratio, (width - 3) * ratio, (height - cell.height - 1) * ratio)
+                        }
+                    } else if (area.type === 2) {
+                        ctx.fillRect((area.x + 2) * ratio, (cell.realY + 1) * ratio, (width - cell.width - 2) * ratio, areaHeight - 1)
+                        if (area.rowCount !== 1) {
+                            ctx.fillRect((area.x + 2) * ratio, (area.y + 2) * ratio, (width - 3) * ratio, (height - cell.height - 1) * ratio)
+                        }
+                    } else if (area.type === 3) {
+                        ctx.fillRect((area.x + 2) * ratio, (area.y + 2) * ratio, (width - cell.width - 2) * ratio, areaHeight)
+                        if (area.rowCount !== 1) {
+                            ctx.fillRect((area.x + 2) * ratio, (area.y + cell.height + 1) * ratio, (width - 3) * ratio, (height - cell.height - 2) * ratio)
+                        }
+                    }
+                } else {
+                    ctx.fillStyle = 'rgba(0,0,0,0.1)'
+                    ctx.fillRect((area.x + 2) * ratio, (area.y + 2) * ratio, (width - 3) * ratio, (height - 3) * ratio)
                 }
                 // 右下角小点
-                ctx.strokeStyle = '#ffffff'
-                ctx.lineWidth = 1
-                ctx.strokeRect(utils.pxFix(area.x + width) - 2, utils.pxFix(area.y + height) - 2, 6, 6)
+                ctx.fillStyle = '#ffffff'
+                ctx.lineWidth = 1 * ratio
+                ctx.fillRect(utils.pxFix(((area.x + width) - 4) * ratio), utils.pxFix(((area.y + height) - 4) * ratio), 7 * ratio, 7 * ratio)
                 ctx.fillStyle = '#237245'
-                ctx.fillRect((area.x + width) - 1, (area.y + height) - 1, 5, 5)
+                ctx.fillRect(((area.x + width) - 3) * ratio, ((area.y + height) - 3) * ratio, 6 * ratio, 6 * ratio)
                 ctx.stroke()
             }
         },
         paintFocusRowAndColumnLine(ctx, focusRow, focusColumn, focusCell) {
             if (focusRow || focusColumn) {
                 ctx.beginPath()
-                ctx.lineWidth = 2
+                const ratio = this.ratio
+                ctx.lineWidth = 2 * ratio
                 ctx.strokeStyle = '#237245'
                 if (focusRow) {
                     const height = (focusRow.height === Infinity) ? this.bodyHeight : focusRow.height
                     if (this.selectArea) {
                         if (this.selectArea.x <= config.width.serial && this.selectArea.x + this.selectArea.width >= config.width.serial) {
-                            ctx.moveTo(config.width.serial, focusRow.y - 1)
-                            ctx.lineTo(config.width.serial, focusRow.y + height + 2)
+                            ctx.moveTo(config.width.serial * ratio, (focusRow.y - 1) * ratio)
+                            ctx.lineTo(config.width.serial * ratio, (focusRow.y + height + 2) * ratio)
                         } else {
-                            ctx.moveTo(config.width.serial, focusRow.y)
-                            ctx.lineTo(config.width.serial, focusRow.y + height)
+                            ctx.moveTo(config.width.serial * ratio, focusRow.y * ratio)
+                            ctx.lineTo(config.width.serial * ratio, (focusRow.y + height) * ratio)
                         }
                     } else if (focusCell) {
-                        if (focusCell.x <= config.width.serial) {
-                            ctx.moveTo(config.width.serial, focusRow.y - 1)
-                            ctx.lineTo(config.width.serial, focusRow.y + height + 2)
+                        if (focusCell.realX <= config.width.serial) {
+                            ctx.moveTo(config.width.serial * ratio, (focusRow.y - 1) * ratio)
+                            ctx.lineTo(config.width.serial * ratio, (focusRow.y + height + 2) * ratio)
                         } else {
-                            ctx.moveTo(config.width.serial, focusRow.y)
-                            ctx.lineTo(config.width.serial, focusRow.y + height)
+                            ctx.moveTo(config.width.serial * ratio, focusRow.y * ratio)
+                            ctx.lineTo(config.width.serial * ratio, (focusRow.y + height) * ratio)
                         }
                     } else {
-                        ctx.moveTo(config.width.serial, focusRow.y)
-                        ctx.lineTo(config.width.serial, focusRow.y + height)
+                        ctx.moveTo(config.width.serial * ratio, focusRow.y * ratio)
+                        ctx.lineTo(config.width.serial * ratio, (focusRow.y + height) * ratio)
                     }
                 }
                 if (focusColumn) {
                     const width = (focusColumn.width === Infinity) ? this.bodyWidth : focusColumn.width
                     if (this.selectArea) {
                         if (this.selectArea.y <= config.height.columns && this.selectArea.y + this.selectArea.height >= config.height.columns) {
-                            ctx.moveTo(focusColumn.x - 1, config.height.columns)
-                            ctx.lineTo(focusColumn.x + width + 2, config.height.columns)
+                            ctx.moveTo((focusColumn.x - 1) * ratio, config.height.columns * ratio)
+                            ctx.lineTo((focusColumn.x + width + 2) * ratio, config.height.columns * ratio)
                         } else {
-                            ctx.moveTo(focusColumn.x, config.height.columns)
-                            ctx.lineTo(focusColumn.x + width, config.height.columns)
+                            ctx.moveTo(focusColumn.x * ratio, config.height.columns * ratio)
+                            ctx.lineTo((focusColumn.x + width) * ratio, config.height.columns * ratio)
                         }
                     } else if (focusCell) {
                         if (focusCell.y <= config.height.columns) {
-                            ctx.moveTo(focusColumn.x - 1, config.height.columns)
-                            ctx.lineTo(focusColumn.x + width + 2, config.height.columns)
+                            ctx.moveTo((focusColumn.x - 1) * ratio, config.height.columns * ratio)
+                            ctx.lineTo((focusColumn.x + width + 2) * ratio, config.height.columns * ratio)
                         } else {
-                            ctx.moveTo(focusColumn.x, config.height.columns)
-                            ctx.lineTo(focusColumn.x + width, config.height.columns)
+                            ctx.moveTo(focusColumn.x * ratio, config.height.columns * ratio)
+                            ctx.lineTo((focusColumn.x + width) * ratio, config.height.columns * ratio)
                         }
                     } else {
-                        ctx.moveTo(focusColumn.x, config.height.columns)
-                        ctx.lineTo(focusColumn.x + width, config.height.columns)
+                        ctx.moveTo(focusColumn.x * ratio, config.height.columns * ratio)
+                        ctx.lineTo((focusColumn.x + width) * ratio, config.height.columns * ratio)
                     }
                 }
                 ctx.stroke()
@@ -228,7 +269,8 @@ export default {
         },
         paintData(ctx, displayCells) {
             ctx.beginPath()
-            ctx.font = 'normal 12px PingFang SC'
+            const ratio = this.ratio
+            ctx.font = `normal ${12 * ratio}px PingFang SC`
             for (const rows of displayCells) {
                 let index = 0
                 for (const item of rows) {
@@ -241,13 +283,13 @@ export default {
                             }
                             ctx.fillStyle = '#fff'
                             if (!maxWidth) {
-                                ctx.fillRect(item.x + 2, item.y + 1, ctx.measureText(item.paintText).width, item.height - 1)
+                                ctx.fillRect((item.realX + 2) * ratio, (item.realY + 1) * ratio, ctx.measureText(item.paintText).width, (item.height - 1) * ratio)
                             }
                             ctx.fillStyle = '#333'
-                            this.paintText(ctx, item.x + 2, item.y + 13, [item.paintText], maxWidth)
+                            this.paintText(ctx, (item.realX + 2) * ratio, (item.realY + 13) * ratio, [item.paintText], maxWidth * ratio)
                         } else {
                             ctx.textAlign = 'right'
-                            this.paintText(ctx, item.x + item.width + 2, item.y + 13, [item.paintText])
+                            this.paintText(ctx, (item.realX + item.width + 2) * ratio, (item.realY + 13) * ratio, [item.paintText])
                         }
                     }
                     index += 1

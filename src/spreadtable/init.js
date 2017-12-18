@@ -13,18 +13,25 @@ export default {
             if (dataSource && dataSource.length > 0) {
                 console.log(dataSource)
             } else {
+                let startY = config.height.columns
                 for (let i = 0; i < 200; i += 1) {
                     const temp = []
                     const cellTemp = []
+                    let startX = config.width.serial
                     for (let j = 0; j < this.words.length; j += 1) {
                         temp.push('')
                         cellTemp.push({
                             cell: j,
+                            row: i,
                             text: '',
                             font: '',
                             paintText: '',
                             type: 'text',
                             style: '',
+                            x: startX,
+                            y: startY,
+                            width: 80,
+                            height: config.height.row,
                         })
                         if (i === 0) {
                             this.bodyWidth += 80
@@ -34,15 +41,19 @@ export default {
                                 cell: j,
                                 hidden: false,
                                 height: 30,
+                                x: startX,
                             })
                         }
+                        startX += 80
                     }
                     allRows.push({
                         row: i,
                         height: config.height.row,
                         style: '',
                         rowData: temp,
+                        y: startY,
                     })
+                    startY += config.height.row
                     this.bodyHeight += config.height.row
                     allCells.push(cellTemp)
                     data.push(temp)
@@ -90,7 +101,7 @@ export default {
 
             this.ratio = (window.devicePixelRatio || 1) / backingStore
             ctx.lineWidth = 1
-            ctx.font = 'normal 12px PingFang SC'
+            ctx.font = `normal ${12 * this.ratio}px PingFang SC`
             ctx.textBaseline = 'middle'
             ctx.save()
         },

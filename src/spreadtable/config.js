@@ -7,8 +7,9 @@ export default {
         center: [0, 0],
     },
     width: {
-        serial: 40,
+        serial: 35,
         scroll: 20,
+        right: 40,
     },
     height: {
         row: 25,
@@ -16,6 +17,7 @@ export default {
         toolbar: 35,
         fx: 35,
         columns: 30,
+        bottom: 40,
     },
     getHeaderHeight() {
         const { nav, fx, toolbar } = this.height

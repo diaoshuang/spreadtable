@@ -25,16 +25,15 @@ export default {
         },
         getDisplayColumns() {
             const { offset: [x], allColumns, canvasWidth } = this
-            let startX = config.width.serial + x
             const temp = []
             for (const column of allColumns) {
                 if (!column.hidden) {
-                    const width = column.width
-                    if (startX + width >= config.width.serial && startX < canvasWidth) {
-                        const columnClone = { ...column, x: startX, width }
-                        temp.push(columnClone)
+                    const realX = column.x + x
+                    if (realX + column.width >= config.width.serial && realX < canvasWidth) {
+                        temp.push({ ...column, realX })
+                    } else if (realX >= canvasWidth) {
+                        break
                     }
-                    startX += width
                 }
             }
             this.display.columns = [...temp]
@@ -43,15 +42,13 @@ export default {
         getDisplayRows() {
             const { offset, allRows, canvasHeight } = this
             const temp = []
-            let startY = config.height.columns + offset[1]
             for (const row of allRows) {
-                if (startY + row.height >= config.height.columns && startY < canvasHeight) {
-                    const rowClone = { ...row, y: startY }
-                    temp.push(rowClone)
-                } else if (startY >= canvasHeight) {
+                const realY = row.y + offset[1]
+                if (realY + row.height >= config.height.columns && realY < canvasHeight) {
+                    temp.push({ ...row, realY })
+                } else if (realY >= canvasHeight) {
                     break
                 }
-                startY += row.height
             }
             this.display.rows = [...temp]
             return temp
@@ -63,7 +60,7 @@ export default {
                 const cellTemp = []
                 for (const column of displayColumns) {
                     const cell = allCells[row.row][column.cell]
-                    const cellClone = { ...cell, x: column.x, row: row.row, y: row.y, width: column.width, height: row.height }
+                    const cellClone = { ...cell, realX: column.realX, realY: row.realY, height: row.height }
                     cellTemp.push(cellClone)
                 }
                 temp.push(cellTemp)

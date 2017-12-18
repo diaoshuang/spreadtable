@@ -2,8 +2,8 @@
     <div ref="spreadtable" class="spreadtable" :style="containerStyle">
         <div class="toolbar">表格！！！！！{{ratio}}</div>
         <div class="spreadtable-main">
-            <div class="input-content" :style="inputStyles" ref="input" contenteditable="true" @input="setValueTemp" @blur="handleInputBlur" @keydown.tab.prevent @keydown.enter.prevent @keydown.esc.prevent></div>
-            <canvas v-if="hasSize" ref="canvas" class="canvas-spreadtable" :width="canvasWidth" :height="canvasHeight" :style="`width:${canvasWidth}px;height:${canvasHeight}px;`"></canvas>
+            <div class="input-content" :style="inputStyles" ref="input" contenteditable="true" @input="setValueTemp" @keydown.tab.prevent @keydown.enter.prevent @keydown.esc.prevent></div>
+            <canvas v-if="hasSize" ref="canvas" class="canvas-spreadtable" :width="canvasWidth*ratio" :height="canvasHeight*ratio" :style="`width:${canvasWidth}px;height:${canvasHeight}px;`"></canvas>
             <div class="horizontal-container" style="width:20px" @click="scroll($event,0)">
                 <div class="scroll-bar-horizontal" ref="horizontal" @mousedown="dragMove($event,0)" :style="{width:horizontalBar.size+'px',left:horizontalBar.x+'px'}">
                     <div :style="horizontalBar.move?'background-color:#a1a1a1;':'background-color:#c1c1c1;'"></div>
@@ -40,7 +40,7 @@ export default {
                 columns: null,
                 serial: null,
             },
-            ratio: 1,
+            ratio: window.devicePixelRatio,
             canvasWidth: 0,
             canvasHeight: 0,
             bodyWidth: 0,
@@ -81,6 +81,13 @@ export default {
             this.$refs.input.innerHTML = ''
             this.focusInput()
         },
+        hoverRowDivide(value) {
+            if (value) {
+                this.$refs.canvas.style.cursor = 'row-resize'
+            } else {
+                this.$refs.canvas.style.cursor = 'default'
+            }
+        },
     },
     created() {
         this.data = this.initData(this.dataSource)
@@ -108,9 +115,33 @@ export default {
         getCellAt(x, y) {
             for (const rows of this.display.cells) {
                 for (const cell of rows) {
-                    if (x >= cell.x && y >= cell.y && x <= cell.x + cell.width && y <= cell.y + cell.height) {
+                    if (x > cell.realX && y > cell.realY && x < cell.realX + cell.width && y < cell.realY + cell.height) {
                         return cell
                     }
+                }
+            }
+            return null
+        },
+        getRowAt(y) {
+            for (const row of this.display.rows) {
+                if (y > row.realY && y < row.realY + row.height) {
+                    return row
+                }
+            }
+            return null
+        },
+        isInRowDivide(y) {
+            for (const row of this.display.rows) {
+                if (y > (row.realY + row.height) - 2 && y < (row.realY + row.height) + 2) {
+                    return row
+                }
+            }
+            return null
+        },
+        getColumnAt(x) {
+            for (const column of this.display.columns) {
+                if (x > column.realX && x < column.realX + column.width) {
+                    return column
                 }
             }
             return null
@@ -138,24 +169,21 @@ export default {
             } else {
                 if (y >= firstCellIndex && y <= lastCellIndex) {
                     const width = this.display.columns[y - firstCellIndex].width
-                    const x = this.display.columns[y - firstCellIndex].x
+                    const x = this.display.columns[y - firstCellIndex].realX
                     focusColumn = { x, width }
                 }
                 if (x >= firstRowIndex && x <= lastRowIndex) {
                     const height = this.display.rows[x - firstRowIndex].height
-                    const y = this.display.rows[x - firstRowIndex].y
+                    const y = this.display.rows[x - firstRowIndex].realY
                     focusRow = { y, height }
                 }
             }
             return { focusRow, focusColumn }
         },
-        handleInputBlur() {
-
-        },
         setValueTemp(e) {
             this.valueTemp = e.target.innerText
             const focusCell = this.getDisplayCell(this.focusCell)
-            let { x, y } = focusCell
+            let { realX: x, realY: y } = focusCell
             if (x < config.width.serial) {
                 this.offset.x += config.width.serial - x
                 x = config.width.serial
@@ -177,11 +205,11 @@ export default {
 
             this.inputStyles = {
                 position: 'absolute',
-                top: `${y + 3}px`,
+                top: `${y + 2}px`,
                 left: `${x + 3}px`,
-                minWidth: `${width - 3}px`,
+                minWidth: `${width - 2}px`,
                 maxWidth: `${maxWidth}px`,
-                minHeight: `${height - 3}px`,
+                minHeight: `${height - 1}px`,
             }
         },
         hideInput() {
@@ -250,7 +278,7 @@ export default {
       position: fixed;
       background-color: #fff;
       z-index: 10;
-      line-height: 22px;
+      line-height: 24px;
     }
   }
 }
