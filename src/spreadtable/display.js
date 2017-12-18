@@ -60,7 +60,7 @@ export default {
                 const cellTemp = []
                 for (const column of displayColumns) {
                     const cell = allCells[row.row][column.cell]
-                    const cellClone = { ...cell, realX: column.realX, realY: row.realY, height: row.height }
+                    const cellClone = { ...cell, realX: column.realX, realY: row.realY, height: row.height, width: column.width }
                     cellTemp.push(cellClone)
                 }
                 temp.push(cellTemp)

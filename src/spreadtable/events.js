@@ -7,6 +7,12 @@ export default {
             isDown: false,
             hoverRowDivide: null,
             isHoverRowDivideDown: false,
+            isHoverColumnDivideDown: false,
+            hoverColumnDivide: null,
+            isHoverGrid: false,
+            isHoverRow: false,
+            isHoverColumn: false,
+            isHoverFocusPoint: false,
         }
     },
     created() {
@@ -19,12 +25,14 @@ export default {
             window.addEventListener('mousemove', this.handleMousemove, true)
             window.addEventListener('mouseup', this.handleMouseup, false)
             window.addEventListener('resize', this.handleResize, false)
+            document.addEventListener('contextmenu', this.handleContextMenu, false)
         },
         removeEvents() {
             window.removeEventListener('mousedown', this.handleMousedown, false)
             window.removeEventListener('mousemove', this.handleMousemove, true)
             window.removeEventListener('mouseup', this.handleMouseup, false)
             window.removeEventListener('resize', this.handleResize, false)
+            document.removeEventListener('contextmenu', this.handleContextMenu, false)
         },
         handleWheel(e) {
             if (!this.isEditing) {
@@ -81,6 +89,9 @@ export default {
                 const eY = e.offsetY
                 if (this.hoverRowDivide) {
                     this.isHoverRowDivideDown = true
+                    this.painted()
+                } else if (this.hoverColumnDivide) {
+                    this.isHoverColumnDivideDown = true
                     this.painted()
                 } else if (utils.isInRegion([eX, eY], [config.width.serial, config.height.columns], [this.canvasWidth, this.canvasHeight])) {
                     this.isDown = true
@@ -149,44 +160,75 @@ export default {
                         }
                     }
                 } else if (this.isHoverRowDivideDown) {
-                    // this.hoverRowDivide.y += { y: row.realY + row.height, row: row.row }
                     if (eY > this.hoverRowDivide.minY) {
                         this.hoverRowDivide.y = eY
                     } else {
                         this.hoverRowDivide.y = this.hoverRowDivide.minY
                     }
                     this.painted()
+                } else if (this.isHoverColumnDivideDown) {
+                    if (eX > this.hoverColumnDivide.minX) {
+                        this.hoverColumnDivide.x = eX
+                    } else {
+                        this.hoverColumnDivide.x = this.hoverColumnDivide.minX
+                    }
+                    this.painted()
+                } else if (utils.isInRegion([eX, eY], [config.width.serial, config.height.columns], [this.canvasWidth, this.canvasHeight])) {
+                    this.isHoverGrid = true
+                    this.isHoverColumn = false
+                    this.isHoverRow = false
+                    this.isHoverFocusPoint = false
+                    if (this.focusCell) {
+                        const focusCell = this.getDisplayCell(this.focusCell)
+                        if (focusCell) {
+                            const focusPointX = focusCell.x + focusCell.width
+                            const focusPointY = focusCell.y + focusCell.height
+                            if (utils.isInRegion([eX, eY], [focusPointX - 3, focusPointY - 3], [focusPointX + 4, focusPointY + 4])) {
+                                this.isHoverFocusPoint = true
+                            }
+                        }
+                    }
                 } else if (utils.isInRegion([eX, eY], [0, config.height.columns], [config.width.serial, this.canvasHeight])) {
+                    this.isHoverGrid = false
+                    this.isHoverColumn = false
+                    this.isHoverRow = true
                     if (!this.isHoverRowDivideDown) {
                         const row = this.isInRowDivide(eY)
                         if (row) {
-                            // this.rowSideLine = { y: row.realY + row.height, row: row.row }
                             if (!this.hoverRowDivide) {
                                 this.hoverRowDivide = { y: row.realY + row.height, row, minY: row.realY + config.height.row }
-                                console.log(this.hoverRowDivide)
                             }
                         } else if (this.hoverRowDivide) {
                             this.hoverRowDivide = null
                         }
+                    } else {
+                        this.hoverRowDivide = null
                     }
                 } else if (utils.isInRegion([eX, eY], [config.width.serial, 0], [this.canvasWidth, config.height.columns])) {
-                    const column = this.getColumnAt(eX)
-                    if (column) {
-                        this.selectArea = { type: 0, x: column.realX, y: config.height.columns, width: column.width, height: Infinity, cell: column.cell, row: 0, offset: [...this.offset] }
-                        this.selectArea.rowCount = Infinity
-                        this.selectArea.cellCount = 1
-                        this.painted()
-                        this.$emit('focus', this.allRows[0].rowData)
+                    this.isHoverGrid = false
+                    this.isHoverColumn = true
+                    this.isHoverRow = false
+                    if (!this.isHoverColumnDivideDown) {
+                        const column = this.isInColumnDivide(eX)
+                        if (column) {
+                            if (!this.hoverColumnDivide) {
+                                this.hoverColumnDivide = { x: column.realX + column.width, column, minX: column.realX + 2 }
+                            }
+                        } else if (this.hoverColumnDivide) {
+                            this.hoverColumnDivide = null
+                        }
+                    } else {
+                        this.hoverColumnDivide = null
                     }
                 }
             }
         },
         handleMouseup(e) {
             const eX = e.offsetX
+            const eY = e.offsetY
             this.isDown = false
             this.horizontalBar.move = false
             this.verticalBar.move = false
-            console.log(this.isHoverRowDivideDown)
             if (this.isHoverRowDivideDown) {
                 const differenceValue = this.hoverRowDivide.y - (this.hoverRowDivide.row.realY + this.hoverRowDivide.row.height)
                 this.allRows[this.hoverRowDivide.row.row].height += differenceValue
@@ -195,20 +237,58 @@ export default {
                     this.allRows[i].y += differenceValue
                 }
                 if (this.selectArea) {
-                    console.log(1)
-                    this.selectArea.height += differenceValue
+                    // TODO selectArea高度重置，3种情况
+                    // this.selectArea.height += differenceValue
                 }
+                this.bodyHeight += differenceValue
                 this.isHoverRowDivideDown = false
-                if (eX < config.width.serial) {
-                    this.hoverRowDivide.row = { realY: this.hoverRowDivide.row.realY, ...this.allRows[this.hoverRowDivide.row.row] }
-                } else {
-                    this.hoverRowDivide = null
-                }
+                this.hoverRowDivide = null
                 this.painted()
+
+                if (eX > 0 && eX < config.width.serial) {
+                    const row = this.isInRowDivide(eY)
+                    if (row) {
+                        if (!this.hoverRowDivide) {
+                            this.hoverRowDivide = { y: row.realY + row.height, row, minY: row.realY + config.height.row }
+                        }
+                    } else if (this.hoverRowDivide) {
+                        this.hoverRowDivide = null
+                    }
+                }
+            }
+            if (this.isHoverColumnDivideDown) {
+                const differenceValue = this.hoverColumnDivide.x - (this.hoverColumnDivide.column.realX + this.hoverColumnDivide.column.width)
+                this.allColumns[this.hoverColumnDivide.column.cell].width += differenceValue
+
+                for (let i = this.hoverColumnDivide.column.cell + 1; i < this.allColumns.length; i += 1) {
+                    this.allColumns[i].x += differenceValue
+                }
+                if (this.selectArea) {
+                    // this.selectArea.height += differenceValue
+                    // TODO selectArea宽度重置，3种情况
+                }
+                this.bodyWidth += differenceValue
+                this.isHoverColumnDivideDown = false
+                this.hoverColumnDivide = null
+                this.painted()
+                if (eY > 0 && eY < config.height.columns) {
+                    const column = this.isInColumnDivide(eX)
+                    if (column) {
+                        if (!this.hoverColumnDivide) {
+                            this.hoverColumnDivide = { x: column.realX + column.width, column, minX: column.realX + 2 }
+                        }
+                    } else if (this.hoverColumnDivide) {
+                        this.hoverColumnDivide = null
+                    }
+                }
             }
         },
         handleResize() {
             this.init()
+        },
+        handleContextMenu() {
+            console.log(1)
+            return false
         },
     },
 }

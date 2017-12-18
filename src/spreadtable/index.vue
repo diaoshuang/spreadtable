@@ -85,7 +85,42 @@ export default {
             if (value) {
                 this.$refs.canvas.style.cursor = 'row-resize'
             } else {
+                this.$refs.canvas.style.cursor = 'e-resize'
+            }
+        },
+        hoverColumnDivide(value) {
+            if (value) {
+                this.$refs.canvas.style.cursor = 'col-resize'
+            } else {
+                this.$refs.canvas.style.cursor = 's-resize'
+            }
+        },
+        isHoverGrid(value) {
+            if (value) {
+                this.$refs.canvas.style.cursor = 'cell'
+            } else {
                 this.$refs.canvas.style.cursor = 'default'
+            }
+        },
+        isHoverRow(value) {
+            if (value) {
+                this.$refs.canvas.style.cursor = 'e-resize'
+            } else {
+                this.$refs.canvas.style.cursor = 'default'
+            }
+        },
+        isHoverColumn(value) {
+            if (value) {
+                this.$refs.canvas.style.cursor = 's-resize'
+            } else {
+                this.$refs.canvas.style.cursor = 'default'
+            }
+        },
+        isHoverFocusPoint(value) {
+            if (value) {
+                this.$refs.canvas.style.cursor = 'crosshair'
+            } else {
+                this.$refs.canvas.style.cursor = 'cell'
             }
         },
     },
@@ -115,7 +150,7 @@ export default {
         getCellAt(x, y) {
             for (const rows of this.display.cells) {
                 for (const cell of rows) {
-                    if (x > cell.realX && y > cell.realY && x < cell.realX + cell.width && y < cell.realY + cell.height) {
+                    if (x >= cell.realX && y >= cell.realY && x < cell.realX + cell.width && y < cell.realY + cell.height) {
                         return cell
                     }
                 }
@@ -132,8 +167,16 @@ export default {
         },
         isInRowDivide(y) {
             for (const row of this.display.rows) {
-                if (y > (row.realY + row.height) - 2 && y < (row.realY + row.height) + 2) {
+                if (y > (row.realY + row.height) - 3 && y < (row.realY + row.height) + 3) {
                     return row
+                }
+            }
+            return null
+        },
+        isInColumnDivide(x) {
+            for (const column of this.display.columns) {
+                if (x > (column.realX + column.width) - 3 && x < (column.realX + column.width) + 3) {
+                    return column
                 }
             }
             return null

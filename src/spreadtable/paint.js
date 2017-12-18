@@ -66,7 +66,11 @@ export default {
             for (const { realX: x, title, width } of displayColumns) {
                 ctx.moveTo(utils.pxFix((x + width) * ratio), 0)
                 ctx.lineTo(utils.pxFix((x + width) * ratio), config.height.columns * ratio)
-                this.paintText(ctx, (x + utils.half(width)) * ratio, 15 * ratio, [title])
+                if (width > 10) {
+                    this.paintText(ctx, (x + utils.half(width)) * ratio, 15 * ratio, [title])
+                } else if (width > 0) {
+                    this.paintText(ctx, (x + utils.half(width)) * ratio, 15 * ratio, ['..'])
+                }
             }
             // row 横线
             for (const { realY: y, row, height } of displayRows) {
@@ -79,10 +83,19 @@ export default {
             if (this.isHoverRowDivideDown) {
                 ctx.beginPath()
                 ctx.strokeStyle = '#000'
-                ctx.moveTo(0, this.hoverRowDivide.y)
-                ctx.lineTo(this.canvasWidth, this.hoverRowDivide.y)
-                ctx.moveTo(0, this.hoverRowDivide.row.realY)
-                ctx.lineTo(this.canvasWidth, this.hoverRowDivide.row.realY)
+                ctx.moveTo(0, this.hoverRowDivide.y * ratio)
+                ctx.lineTo(this.canvasWidth * ratio, this.hoverRowDivide.y * ratio)
+                ctx.moveTo(0, this.hoverRowDivide.row.realY * ratio)
+                ctx.lineTo(this.canvasWidth * ratio, this.hoverRowDivide.row.realY * ratio)
+                ctx.stroke()
+            }
+            if (this.isHoverColumnDivideDown) {
+                ctx.beginPath()
+                ctx.strokeStyle = '#000'
+                ctx.moveTo(this.hoverColumnDivide.x * ratio, 0)
+                ctx.lineTo(this.hoverColumnDivide.x * ratio, this.canvasHeight * ratio)
+                ctx.moveTo(this.hoverColumnDivide.column.realX * ratio, 0)
+                ctx.lineTo(this.hoverColumnDivide.column.realX * ratio, this.canvasHeight * ratio)
                 ctx.stroke()
             }
 
@@ -179,22 +192,30 @@ export default {
                         areaHeight = (cell.height - 3) * ratio
                     }
                     if (area.type === 0) {
-                        ctx.fillRect((area.x + cell.width + 1) * ratio, (area.y + 2) * ratio, (width - cell.width - 2) * ratio, areaHeight)
+                        if (area.cellCount !== 1) {
+                            ctx.fillRect((area.x + cell.width + 1) * ratio, (area.y + 2) * ratio, (width - cell.width - 2) * ratio, areaHeight)
+                        }
                         if (area.rowCount !== 1) {
                             ctx.fillRect((area.x + 2) * ratio, (area.y + cell.height + 1) * ratio, (width - 3) * ratio, (height - cell.height - 2) * ratio)
                         }
                     } else if (area.type === 1) {
-                        ctx.fillRect((area.x + cell.width + 1) * ratio, (cell.realY + 1) * ratio, (width - cell.width - 2) * ratio, areaHeight - 1)
+                        if (area.cellCount !== 1) {
+                            ctx.fillRect((area.x + cell.width + 1) * ratio, (cell.realY + 1) * ratio, (width - cell.width - 2) * ratio, areaHeight - 1)
+                        }
                         if (area.rowCount !== 1) {
                             ctx.fillRect((area.x + 2) * ratio, (area.y + 2) * ratio, (width - 3) * ratio, (height - cell.height - 1) * ratio)
                         }
                     } else if (area.type === 2) {
-                        ctx.fillRect((area.x + 2) * ratio, (cell.realY + 1) * ratio, (width - cell.width - 2) * ratio, areaHeight - 1)
+                        if (area.cellCount !== 1) {
+                            ctx.fillRect((area.x + 2) * ratio, (cell.realY + 1) * ratio, (width - cell.width - 2) * ratio, areaHeight - 1)
+                        }
                         if (area.rowCount !== 1) {
                             ctx.fillRect((area.x + 2) * ratio, (area.y + 2) * ratio, (width - 3) * ratio, (height - cell.height - 1) * ratio)
                         }
                     } else if (area.type === 3) {
-                        ctx.fillRect((area.x + 2) * ratio, (area.y + 2) * ratio, (width - cell.width - 2) * ratio, areaHeight)
+                        if (area.cellCount !== 1) {
+                            ctx.fillRect((area.x + 2) * ratio, (area.y + 2) * ratio, (width - cell.width - 2) * ratio, areaHeight)
+                        }
                         if (area.rowCount !== 1) {
                             ctx.fillRect((area.x + 2) * ratio, (area.y + cell.height + 1) * ratio, (width - 3) * ratio, (height - cell.height - 2) * ratio)
                         }
