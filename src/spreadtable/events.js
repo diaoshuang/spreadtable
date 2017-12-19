@@ -24,6 +24,7 @@ export default {
     methods: {
         initEvents() {
             this.$refs.canvas.addEventListener(this.isFirefox ? 'DOMMouseScroll' : 'mousewheel', this.handleWheel)
+            this.$refs.canvas.addEventListener('contextmenu', this.handleContextMenu, false)
             window.addEventListener('mousedown', this.handleMousedown, false)
             window.addEventListener('mousemove', this.handleMousemove, true)
             window.addEventListener('mouseup', this.handleMouseup, false)
@@ -324,8 +325,9 @@ export default {
         handleResize() {
             this.init()
         },
-        handleContextMenu() {
-            console.log(1)
+        handleContextMenu(e) {
+            e.preventDefault()
+            console.log(e)
             return false
         },
     },
