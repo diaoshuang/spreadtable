@@ -7,16 +7,17 @@ export default {
         center: [0, 0],
     },
     width: {
-        serial: 35,
+        serial: 30,
         scroll: 20,
         right: 40,
+        cell: 75,
     },
     height: {
-        row: 25,
+        row: 20,
         nav: 60,
         toolbar: 35,
         fx: 35,
-        columns: 30,
+        columns: 25,
         bottom: 40,
     },
     getHeaderHeight() {

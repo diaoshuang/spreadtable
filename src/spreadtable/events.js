@@ -178,6 +178,9 @@ export default {
                     this.isHoverColumn = false
                     this.isHoverRow = false
                     this.isHoverFocusPoint = false
+                    this.hoverRowDivide = null
+                    this.hoverColumnDivide = null
+                    this.setCursor('cell')
                     if (this.focusCell) {
                         const focusCell = this.getDisplayCell(this.focusCell)
                         if (focusCell) {
@@ -185,6 +188,7 @@ export default {
                             const focusPointY = focusCell.y + focusCell.height
                             if (utils.isInRegion([eX, eY], [focusPointX - 3, focusPointY - 3], [focusPointX + 4, focusPointY + 4])) {
                                 this.isHoverFocusPoint = true
+                                this.setCursor('crosshair')
                             }
                         }
                     }
@@ -192,9 +196,12 @@ export default {
                     this.isHoverGrid = false
                     this.isHoverColumn = false
                     this.isHoverRow = true
+                    this.hoverColumnDivide = null
+                    this.setCursor('e-resize')
                     if (!this.isHoverRowDivideDown) {
                         const row = this.isInRowDivide(eY)
                         if (row) {
+                            this.setCursor('row-resize')
                             if (!this.hoverRowDivide) {
                                 this.hoverRowDivide = { y: row.realY + row.height, row, minY: row.realY + config.height.row }
                             }
@@ -208,9 +215,12 @@ export default {
                     this.isHoverGrid = false
                     this.isHoverColumn = true
                     this.isHoverRow = false
+                    this.hoverRowDivide = null
+                    this.setCursor('s-resize')
                     if (!this.isHoverColumnDivideDown) {
                         const column = this.isInColumnDivide(eX)
                         if (column) {
+                            this.setCursor('col-resize')
                             if (!this.hoverColumnDivide) {
                                 this.hoverColumnDivide = { x: column.realX + column.width, column, minX: column.realX + 2 }
                             }
@@ -220,6 +230,13 @@ export default {
                     } else {
                         this.hoverColumnDivide = null
                     }
+                } else if (utils.isInRegion([eX, eY], [0, 0], [config.width.serial - 2, config.height.columns - 2])) {
+                    this.setCursor('se-resize')
+                    this.isHoverGrid = false
+                    this.isHoverColumn = false
+                    this.isHoverRow = false
+                    this.hoverRowDivide = null
+                    this.hoverColumnDivide = null
                 }
             }
         },
@@ -248,11 +265,7 @@ export default {
                 if (eX > 0 && eX < config.width.serial) {
                     const row = this.isInRowDivide(eY)
                     if (row) {
-                        if (!this.hoverRowDivide) {
-                            this.hoverRowDivide = { y: row.realY + row.height, row, minY: row.realY + config.height.row }
-                        }
-                    } else if (this.hoverRowDivide) {
-                        this.hoverRowDivide = null
+                        this.hoverRowDivide = { y: row.realY + row.height, row, minY: row.realY + config.height.row }
                     }
                 }
             }
@@ -274,11 +287,7 @@ export default {
                 if (eY > 0 && eY < config.height.columns) {
                     const column = this.isInColumnDivide(eX)
                     if (column) {
-                        if (!this.hoverColumnDivide) {
-                            this.hoverColumnDivide = { x: column.realX + column.width, column, minX: column.realX + 2 }
-                        }
-                    } else if (this.hoverColumnDivide) {
-                        this.hoverColumnDivide = null
+                        this.hoverColumnDivide = { x: column.realX + column.width, column, minX: column.realX + 2 }
                     }
                 }
             }

@@ -67,16 +67,16 @@ export default {
                 ctx.moveTo(utils.pxFix((x + width) * ratio), 0)
                 ctx.lineTo(utils.pxFix((x + width) * ratio), config.height.columns * ratio)
                 if (width > 10) {
-                    this.paintText(ctx, (x + utils.half(width)) * ratio, 15 * ratio, [title])
+                    this.paintText(ctx, (x + utils.half(width)) * ratio, 13 * ratio, [title])
                 } else if (width > 0) {
-                    this.paintText(ctx, (x + utils.half(width)) * ratio, 15 * ratio, ['..'])
+                    this.paintText(ctx, (x + utils.half(width)) * ratio, 13 * ratio, ['..'])
                 }
             }
             // row 横线
             for (const { realY: y, row, height } of displayRows) {
                 ctx.moveTo(0, utils.pxFix((y + height) * ratio))
                 ctx.lineTo(config.width.serial * ratio, utils.pxFix((y + height) * ratio))
-                this.paintText(ctx, utils.half(config.width.serial) * ratio, (y + 14) * ratio, [row + 1])
+                this.paintText(ctx, utils.half(config.width.serial) * ratio, (y + 11) * ratio, [row + 1])
             }
             ctx.stroke()
 
@@ -134,6 +134,7 @@ export default {
             ctx.fillStyle = '#dfdfdf'
             if (this.selectArea && this.selectArea.width === Infinity && this.selectArea.height === Infinity) {
                 ctx.fillStyle = '#237245'
+                ctx.strokeStyle = '#237245'
             }
             ctx.fill()
             ctx.stroke()
@@ -307,10 +308,10 @@ export default {
                                 ctx.fillRect((item.realX + 2) * ratio, (item.realY + 1) * ratio, ctx.measureText(item.paintText).width, (item.height - 1) * ratio)
                             }
                             ctx.fillStyle = '#333'
-                            this.paintText(ctx, (item.realX + 2) * ratio, (item.realY + 13) * ratio, [item.paintText], maxWidth * ratio)
+                            this.paintText(ctx, (item.realX + 2) * ratio, (item.realY + 11) * ratio, [item.paintText], maxWidth * ratio)
                         } else {
                             ctx.textAlign = 'right'
-                            this.paintText(ctx, (item.realX + item.width + 2) * ratio, (item.realY + 13) * ratio, [item.paintText])
+                            this.paintText(ctx, (item.realX + item.width + 2) * ratio, (item.realY + 11) * ratio, [item.paintText])
                         }
                     }
                     index += 1

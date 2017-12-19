@@ -81,48 +81,48 @@ export default {
             this.$refs.input.innerHTML = ''
             this.focusInput()
         },
-        hoverRowDivide(value) {
-            if (value) {
-                this.$refs.canvas.style.cursor = 'row-resize'
-            } else {
-                this.$refs.canvas.style.cursor = 'e-resize'
-            }
-        },
-        hoverColumnDivide(value) {
-            if (value) {
-                this.$refs.canvas.style.cursor = 'col-resize'
-            } else {
-                this.$refs.canvas.style.cursor = 's-resize'
-            }
-        },
-        isHoverGrid(value) {
-            if (value) {
-                this.$refs.canvas.style.cursor = 'cell'
-            } else {
-                this.$refs.canvas.style.cursor = 'default'
-            }
-        },
-        isHoverRow(value) {
-            if (value) {
-                this.$refs.canvas.style.cursor = 'e-resize'
-            } else {
-                this.$refs.canvas.style.cursor = 'default'
-            }
-        },
-        isHoverColumn(value) {
-            if (value) {
-                this.$refs.canvas.style.cursor = 's-resize'
-            } else {
-                this.$refs.canvas.style.cursor = 'default'
-            }
-        },
-        isHoverFocusPoint(value) {
-            if (value) {
-                this.$refs.canvas.style.cursor = 'crosshair'
-            } else {
-                this.$refs.canvas.style.cursor = 'cell'
-            }
-        },
+        // hoverRowDivide(value) {
+        //     if (value) {
+        //         this.$refs.canvas.style.cursor = 'row-resize'
+        //     } else {
+        //         this.$refs.canvas.style.cursor = 'e-resize'
+        //     }
+        // },
+        // hoverColumnDivide(value) {
+        //     if (value) {
+        //         this.$refs.canvas.style.cursor = 'col-resize'
+        //     } else {
+        //         this.$refs.canvas.style.cursor = 's-resize'
+        //     }
+        // },
+        // isHoverGrid(value) {
+        //     if (value) {
+        //         this.$refs.canvas.style.cursor = 'cell'
+        //     } else {
+        //         this.$refs.canvas.style.cursor = 'default'
+        //     }
+        // },
+        // isHoverRow(value) {
+        //     if (value) {
+        //         this.$refs.canvas.style.cursor = 'e-resize'
+        //     } else {
+        //         this.$refs.canvas.style.cursor = 'default'
+        //     }
+        // },
+        // isHoverColumn(value) {
+        //     if (value) {
+        //         this.$refs.canvas.style.cursor = 's-resize'
+        //     } else {
+        //         this.$refs.canvas.style.cursor = 'default'
+        //     }
+        // },
+        // isHoverFocusPoint(value) {
+        //     if (value) {
+        //         this.$refs.canvas.style.cursor = 'crosshair'
+        //     } else {
+        //         this.$refs.canvas.style.cursor = 'cell'
+        //     }
+        // },
     },
     created() {
         this.data = this.initData(this.dataSource)
@@ -295,6 +295,11 @@ export default {
             this.allCells[anchor[0]][anchor[1]].content = value
             this.allCells[anchor[0]][anchor[1]].paintText = [value]
         },
+        setCursor(type) {
+            if (this.$refs.canvas.style.cursor !== type) {
+                this.$refs.canvas.style.cursor = type
+            }
+        },
     },
 }
 </script>
@@ -321,7 +326,7 @@ export default {
       position: fixed;
       background-color: #fff;
       z-index: 10;
-      line-height: 24px;
+      line-height: 19px;
     }
   }
 }

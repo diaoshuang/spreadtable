@@ -30,21 +30,21 @@ export default {
                             style: '',
                             x: startX,
                             y: startY,
-                            width: 80,
+                            width: config.width.cell,
                             height: config.height.row,
                         })
                         if (i === 0) {
-                            this.bodyWidth += 80
+                            this.bodyWidth += config.width.cell
                             allColumns.push({
-                                width: 80,
+                                width: config.width.cell,
                                 title: this.words[j],
                                 cell: j,
                                 hidden: false,
-                                height: 30,
+                                height: config.height.columns,
                                 x: startX,
                             })
                         }
-                        startX += 80
+                        startX += config.width.cell
                     }
                     allRows.push({
                         row: i,
