@@ -5,14 +5,17 @@ export default {
     data() {
         return {
             isDown: false,
-            hoverRowDivide: null,
             isHoverRowDivideDown: false,
             isHoverColumnDivideDown: false,
-            hoverColumnDivide: null,
             isHoverGrid: false,
             isHoverRow: false,
             isHoverColumn: false,
-            isHoverFocusPoint: false,
+            isHoverFocusCopy: false,
+            isFocusCopyDown: false,
+
+            hoverRowDivide: null,
+            hoverColumnDivide: null,
+            focusCopy: null,
         }
     },
     created() {
@@ -25,14 +28,12 @@ export default {
             window.addEventListener('mousemove', this.handleMousemove, true)
             window.addEventListener('mouseup', this.handleMouseup, false)
             window.addEventListener('resize', this.handleResize, false)
-            document.addEventListener('contextmenu', this.handleContextMenu, false)
         },
         removeEvents() {
             window.removeEventListener('mousedown', this.handleMousedown, false)
             window.removeEventListener('mousemove', this.handleMousemove, true)
             window.removeEventListener('mouseup', this.handleMouseup, false)
             window.removeEventListener('resize', this.handleResize, false)
-            document.removeEventListener('contextmenu', this.handleContextMenu, false)
         },
         handleWheel(e) {
             if (!this.isEditing) {
@@ -94,13 +95,17 @@ export default {
                     this.isHoverColumnDivideDown = true
                     this.painted()
                 } else if (utils.isInRegion([eX, eY], [config.width.serial, config.height.columns], [this.canvasWidth, this.canvasHeight])) {
-                    this.isDown = true
-                    const cell = this.getCellAt(eX, eY)
-                    if (cell) {
-                        this.focusCell = [cell.row, cell.cell]
-                        this.selectArea = null
-                        this.painted()
-                        this.$emit('focus', cell.rowData)
+                    if (this.isHoverFocusCopy) {
+                        this.isFocusCopyDown = true
+                    } else {
+                        this.isDown = true
+                        const cell = this.getCellAt(eX, eY)
+                        if (cell) {
+                            this.focusCell = [cell.row, cell.cell]
+                            this.selectArea = null
+                            this.painted()
+                            this.$emit('focus', cell.rowData)
+                        }
                     }
                 } else if (utils.isInRegion([eX, eY], [0, 0], [config.width.serial - 2, config.height.columns - 2])) {
                     this.focusCell = [0, 0]
@@ -114,6 +119,7 @@ export default {
                     const row = this.getRowAt(eY)
                     if (row) {
                         this.focusCell = [row.row, 0]
+                        this.offset[0] = 0
                         this.selectArea = { type: 0, x: config.width.serial, y: row.realY, width: Infinity, height: row.height, cell: 0, row: row.row, offset: [...this.offset] }
                         this.selectArea.rowCount = 1
                         this.selectArea.cellCount = Infinity
@@ -124,6 +130,7 @@ export default {
                     const column = this.getColumnAt(eX)
                     if (column) {
                         this.focusCell = [0, column.cell]
+                        this.offset[1] = 0
                         this.selectArea = { type: 0, x: column.realX, y: config.height.columns, width: column.width, height: Infinity, cell: column.cell, row: 0, offset: [...this.offset] }
                         this.selectArea.rowCount = Infinity
                         this.selectArea.cellCount = 1
@@ -134,52 +141,82 @@ export default {
             }
         },
         handleMousemove(e) {
-            if (e.target.classList.contains('canvas-spreadtable')) {
-                const eX = e.offsetX
-                const eY = e.offsetY
-                if (this.isDown) {
-                    const { realX: x, realY: y, width, height, row, cell: cellIndex } = this.getDisplayCell(this.focusCell)
-                    if (eX >= x && eX <= x + width && eY >= y && eY <= y + height) {
-                        this.selectArea = null
-                        this.painted()
-                    } else {
-                        const cell = this.getCellAt(eX, eY)
-                        if (cell) {
-                            if (cell.realX >= x && cell.realY >= y) {
-                                this.selectArea = { type: 0, x, y, width: (cell.realX - x) + cell.width, height: (cell.realY - y) + cell.height, cell: cellIndex, row, offset: [...this.offset] }
-                            } else if (cell.realX >= x && cell.realY <= y) {
-                                this.selectArea = { type: 1, x, y: cell.realY, width: (cell.realX - x) + cell.width, height: (y - cell.realY) + height, row: cell.row, cell: cellIndex, offset: [...this.offset] }
-                            } else if (cell.realX <= x && cell.realY <= y) {
-                                this.selectArea = { type: 2, x: cell.realX, y: cell.realY, width: (x - cell.realX) + width, height: (y - cell.realY) + height, row: cell.row, cell: cell.cell, offset: [...this.offset] }
-                            } else if (cell.realX <= x && cell.realY >= y) {
-                                this.selectArea = { type: 3, x: cell.realX, y, width: (x - cell.realX) + width, height: (cell.realY - y) + cell.height, row, cell: cell.cell, offset: [...this.offset] }
-                            }
-                            this.selectArea.rowCount = Math.abs(cell.row - row) + 1
-                            this.selectArea.cellCount = Math.abs(cell.cell - cellIndex) + 1
-                            this.painted()
+            const eX = e.offsetX
+            const eY = e.offsetY
+            this.isHoverFocusCopy = false
+            this.isHoverColumn = false
+            this.isHoverRow = false
+            this.isHoverGrid = false
+            if (!this.isHoverRowDivideDown) {
+                this.hoverRowDivide = null
+            }
+            if (!this.isHoverColumnDivideDown) {
+                this.hoverColumnDivide = null
+            }
+            if (this.isDown) {
+                const { realX: x, realY: y, width, height, row, cell: cellIndex } = this.getDisplayCell(this.focusCell)
+                if (eX >= x && eX <= x + width && eY >= y && eY <= y + height) {
+                    this.selectArea = null
+                    this.painted()
+                } else {
+                    const cell = this.getCellAt(eX, eY)
+                    if (cell) {
+                        if (cell.realX >= x && cell.realY >= y) {
+                            this.selectArea = { type: 0, x, y, width: (cell.realX - x) + cell.width, height: (cell.realY - y) + cell.height, cell: cellIndex, row, offset: [...this.offset] }
+                        } else if (cell.realX >= x && cell.realY <= y) {
+                            this.selectArea = { type: 1, x, y: cell.realY, width: (cell.realX - x) + cell.width, height: (y - cell.realY) + height, row: cell.row, cell: cellIndex, offset: [...this.offset] }
+                        } else if (cell.realX <= x && cell.realY <= y) {
+                            this.selectArea = { type: 2, x: cell.realX, y: cell.realY, width: (x - cell.realX) + width, height: (y - cell.realY) + height, row: cell.row, cell: cell.cell, offset: [...this.offset] }
+                        } else if (cell.realX <= x && cell.realY >= y) {
+                            this.selectArea = { type: 3, x: cell.realX, y, width: (x - cell.realX) + width, height: (cell.realY - y) + cell.height, row, cell: cell.cell, offset: [...this.offset] }
                         }
+                        this.selectArea.rowCount = Math.abs(cell.row - row) + 1
+                        this.selectArea.cellCount = Math.abs(cell.cell - cellIndex) + 1
+                        this.painted()
                     }
-                } else if (this.isHoverRowDivideDown) {
-                    if (eY > this.hoverRowDivide.minY) {
-                        this.hoverRowDivide.y = eY
+                }
+            } else if (this.isHoverRowDivideDown) {
+                if (eY > this.hoverRowDivide.minY) {
+                    this.hoverRowDivide.y = eY
+                } else {
+                    this.hoverRowDivide.y = this.hoverRowDivide.minY
+                }
+                this.painted()
+            } else if (this.isHoverColumnDivideDown) {
+                if (eX > this.hoverColumnDivide.minX) {
+                    this.hoverColumnDivide.x = eX
+                } else {
+                    this.hoverColumnDivide.x = this.hoverColumnDivide.minX
+                }
+                this.painted()
+            } else if (this.isFocusCopyDown) {
+                const focusCell = this.getDisplayCell(this.focusCell)
+                const startPoint = [focusCell.x + focusCell.width, focusCell.y + focusCell.height]
+                if ((eX >= focusCell.x && eX <= focusCell.x + focusCell.width) || this.isInVerticalQuadrant(focusCell, eX, eY)) {
+                    if (eY - startPoint[1] > 0) {
+                        const { height, rows } = this.getCellsHeight(focusCell, eY)
+                        this.focusCopy = { x: focusCell.x, y: focusCell.y, width: focusCell.width, height, rows }
+                    } else if (eY - focusCell.y < 0) {
+                        const { height, rows } = this.getCellsHeight(focusCell, eY)
+                        this.focusCopy = { x: focusCell.x, y: (focusCell.y + focusCell.height) - height, width: focusCell.width, height, rows }
                     } else {
-                        this.hoverRowDivide.y = this.hoverRowDivide.minY
+                        this.focusCopy = null
                     }
-                    this.painted()
-                } else if (this.isHoverColumnDivideDown) {
-                    if (eX > this.hoverColumnDivide.minX) {
-                        this.hoverColumnDivide.x = eX
+                } else if ((eY >= focusCell.y && eY < focusCell.y + focusCell.height) || !this.isInVerticalQuadrant(focusCell, eX, eY)) {
+                    if (eX - startPoint[0] > 0) {
+                        const { width, columns } = this.getCellsWidth(focusCell, eX)
+                        this.focusCopy = { x: focusCell.x, y: focusCell.y, width, columns, height: focusCell.height }
+                    } else if (eX - focusCell.x < 0) {
+                        const { width, columns } = this.getCellsWidth(focusCell, eX)
+                        this.focusCopy = { x: (focusCell.x + focusCell.width) - width, y: focusCell.y, width, columns, height: focusCell.height }
                     } else {
-                        this.hoverColumnDivide.x = this.hoverColumnDivide.minX
+                        this.focusCopy = null
                     }
-                    this.painted()
-                } else if (utils.isInRegion([eX, eY], [config.width.serial, config.height.columns], [this.canvasWidth, this.canvasHeight])) {
+                }
+                this.painted()
+            } else if (e.target.classList.contains('canvas-spreadtable')) {
+                if (utils.isInRegion([eX, eY], [config.width.serial, config.height.columns], [this.canvasWidth, this.canvasHeight])) {
                     this.isHoverGrid = true
-                    this.isHoverColumn = false
-                    this.isHoverRow = false
-                    this.isHoverFocusPoint = false
-                    this.hoverRowDivide = null
-                    this.hoverColumnDivide = null
                     this.setCursor('cell')
                     if (this.focusCell) {
                         const focusCell = this.getDisplayCell(this.focusCell)
@@ -187,16 +224,13 @@ export default {
                             const focusPointX = focusCell.x + focusCell.width
                             const focusPointY = focusCell.y + focusCell.height
                             if (utils.isInRegion([eX, eY], [focusPointX - 3, focusPointY - 3], [focusPointX + 4, focusPointY + 4])) {
-                                this.isHoverFocusPoint = true
+                                this.isHoverFocusCopy = true
                                 this.setCursor('crosshair')
                             }
                         }
                     }
                 } else if (utils.isInRegion([eX, eY], [0, config.height.columns], [config.width.serial, this.canvasHeight])) {
-                    this.isHoverGrid = false
-                    this.isHoverColumn = false
                     this.isHoverRow = true
-                    this.hoverColumnDivide = null
                     this.setCursor('e-resize')
                     if (!this.isHoverRowDivideDown) {
                         const row = this.isInRowDivide(eY)
@@ -212,10 +246,7 @@ export default {
                         this.hoverRowDivide = null
                     }
                 } else if (utils.isInRegion([eX, eY], [config.width.serial, 0], [this.canvasWidth, config.height.columns])) {
-                    this.isHoverGrid = false
                     this.isHoverColumn = true
-                    this.isHoverRow = false
-                    this.hoverRowDivide = null
                     this.setCursor('s-resize')
                     if (!this.isHoverColumnDivideDown) {
                         const column = this.isInColumnDivide(eX)
@@ -232,18 +263,16 @@ export default {
                     }
                 } else if (utils.isInRegion([eX, eY], [0, 0], [config.width.serial - 2, config.height.columns - 2])) {
                     this.setCursor('se-resize')
-                    this.isHoverGrid = false
-                    this.isHoverColumn = false
-                    this.isHoverRow = false
-                    this.hoverRowDivide = null
-                    this.hoverColumnDivide = null
                 }
+            } else {
+
             }
         },
         handleMouseup(e) {
             const eX = e.offsetX
             const eY = e.offsetY
             this.isDown = false
+            this.isFocusCopyDown = false
             this.horizontalBar.move = false
             this.verticalBar.move = false
             if (this.isHoverRowDivideDown) {
@@ -255,7 +284,7 @@ export default {
                 }
                 if (this.selectArea) {
                     // TODO selectArea高度重置，3种情况
-                    // this.selectArea.height += differenceValue
+                    this.selectArea = null
                 }
                 this.bodyHeight += differenceValue
                 this.isHoverRowDivideDown = false
@@ -277,7 +306,7 @@ export default {
                     this.allColumns[i].x += differenceValue
                 }
                 if (this.selectArea) {
-                    // this.selectArea.height += differenceValue
+                    this.selectArea = null
                     // TODO selectArea宽度重置，3种情况
                 }
                 this.bodyWidth += differenceValue

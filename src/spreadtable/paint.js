@@ -41,7 +41,11 @@ export default {
 
             this.paintData(ctx, displayCells)
 
-            ctx.textAlign = 'center'
+            if (this.isFocusCopyDown && this.focusCopy) {
+                ctx.strokeStyle = '#237245'
+                ctx.strokeRect(this.focusCopy.x, this.focusCopy.y, this.focusCopy.width, this.focusCopy.height)
+            }
+
             if (this.selectArea) {
                 this.paintFocusAndSelect(ctx, focusCell, this.selectArea)
             } else if (focusCell) {
@@ -61,6 +65,7 @@ export default {
             }
             ctx.beginPath()
             ctx.lineWidth = 1 * ratio
+            ctx.textAlign = 'center'
             ctx.strokeStyle = '#cecece'
             ctx.fillStyle = '#333333'
             for (const { realX: x, title, width } of displayColumns) {

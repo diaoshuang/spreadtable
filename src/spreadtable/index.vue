@@ -81,48 +81,6 @@ export default {
             this.$refs.input.innerHTML = ''
             this.focusInput()
         },
-        // hoverRowDivide(value) {
-        //     if (value) {
-        //         this.$refs.canvas.style.cursor = 'row-resize'
-        //     } else {
-        //         this.$refs.canvas.style.cursor = 'e-resize'
-        //     }
-        // },
-        // hoverColumnDivide(value) {
-        //     if (value) {
-        //         this.$refs.canvas.style.cursor = 'col-resize'
-        //     } else {
-        //         this.$refs.canvas.style.cursor = 's-resize'
-        //     }
-        // },
-        // isHoverGrid(value) {
-        //     if (value) {
-        //         this.$refs.canvas.style.cursor = 'cell'
-        //     } else {
-        //         this.$refs.canvas.style.cursor = 'default'
-        //     }
-        // },
-        // isHoverRow(value) {
-        //     if (value) {
-        //         this.$refs.canvas.style.cursor = 'e-resize'
-        //     } else {
-        //         this.$refs.canvas.style.cursor = 'default'
-        //     }
-        // },
-        // isHoverColumn(value) {
-        //     if (value) {
-        //         this.$refs.canvas.style.cursor = 's-resize'
-        //     } else {
-        //         this.$refs.canvas.style.cursor = 'default'
-        //     }
-        // },
-        // isHoverFocusPoint(value) {
-        //     if (value) {
-        //         this.$refs.canvas.style.cursor = 'crosshair'
-        //     } else {
-        //         this.$refs.canvas.style.cursor = 'cell'
-        //     }
-        // },
     },
     created() {
         this.data = this.initData(this.dataSource)
@@ -185,6 +143,50 @@ export default {
             for (const column of this.display.columns) {
                 if (x > column.realX && x < column.realX + column.width) {
                     return column
+                }
+            }
+            return null
+        },
+        getCellsHeight(focusCell, y) {
+            let heightTemp = 0
+            const rows = []
+            if (focusCell.y > y) {
+                for (let i = focusCell.row; i >= 0; i -= 1) {
+                    heightTemp += this.display.rows[i].height
+                    rows.push(this.display.rows[i])
+                    if (heightTemp >= (focusCell.y - y) + focusCell.height) {
+                        return { height: heightTemp, rows }
+                    }
+                }
+            } else if (focusCell.y + focusCell.height < y) {
+                for (let i = focusCell.row; i < this.display.rows.length; i += 1) {
+                    heightTemp += this.display.rows[i].height
+                    rows.push(this.display.rows[i])
+                    if (heightTemp >= y - focusCell.y) {
+                        return { height: heightTemp, rows }
+                    }
+                }
+            }
+            return null
+        },
+        getCellsWidth(focusCell, x) {
+            let widthTemp = 0
+            const columns = []
+            if (focusCell.x > x) {
+                for (let i = focusCell.cell; i >= 0; i -= 1) {
+                    widthTemp += this.display.columns[i].width
+                    columns.push(this.display.columns[i])
+                    if (widthTemp >= (focusCell.x - x) + focusCell.width) {
+                        return { width: widthTemp, columns }
+                    }
+                }
+            } else if (focusCell.x + focusCell.width < x) {
+                for (let i = focusCell.cell; i < this.display.columns.length; i += 1) {
+                    widthTemp += this.display.columns[i].width
+                    columns.push(this.display.columns[i])
+                    if (widthTemp >= x - focusCell.x) {
+                        return { width: widthTemp, columns }
+                    }
                 }
             }
             return null
@@ -299,6 +301,32 @@ export default {
             if (this.$refs.canvas.style.cursor !== type) {
                 this.$refs.canvas.style.cursor = type
             }
+        },
+        isInVerticalQuadrant(focusCell, x, y) {
+            const startPoint = [focusCell.x, focusCell.y]
+            const endPoint = [focusCell.x + focusCell.width, focusCell.y + focusCell.height]
+            if (x > endPoint[0] && y > endPoint[1]) {
+                if (x - endPoint[0] > y - endPoint[1]) {
+                    return false
+                }
+                return true
+            } else if (x > endPoint[0] && y < startPoint[1]) {
+                if (x - endPoint[0] > startPoint[1] - y) {
+                    return false
+                }
+                return true
+            } else if (x < startPoint[0] && y < startPoint[1]) {
+                if (startPoint[0] - x > startPoint[1] - y) {
+                    return false
+                }
+                return true
+            } else if (x < startPoint[0] && y > endPoint[1]) {
+                if (startPoint[0] - x > y - endPoint[1]) {
+                    return false
+                }
+                return true
+            }
+            return false
         },
     },
 }
