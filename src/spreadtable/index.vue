@@ -1,9 +1,9 @@
 <template>
-    <div ref="spreadtable" class="spreadtable" :style="containerStyle">
+    <div ref="spreadtable" class="spreadtable" :style="containerStyle" @click="showMenu = false">
         <div class="toolbar">表格！！！！！{{ratio}}</div>
         <div class="spreadtable-main">
             <div class="input-content" :style="inputStyles" ref="input" contenteditable="true" @input="setValueTemp" @keydown.tab.prevent @keydown.enter.prevent @keydown.esc.prevent></div>
-            <canvas v-if="hasSize" ref="canvas" class="canvas-spreadtable" :width="canvasWidth*ratio" :height="canvasHeight*ratio" :style="`width:${canvasWidth}px;height:${canvasHeight}px;`"></canvas>
+            <canvas v-if="hasSize" ref="canvas" class="canvas-spreadtable" :width="canvasWidth*ratio" :height="canvasHeight*ratio" :style="`width:${canvasWidth}px;height:${canvasHeight}px;`" @contextmenu="rightClick"></canvas>
             <div class="horizontal-container" style="width:20px" @click="scroll($event,0)">
                 <div class="scroll-bar-horizontal" ref="horizontal" @mousedown="dragMove($event,0)" :style="{width:horizontalBar.size+'px',left:horizontalBar.x+'px'}">
                     <div :style="horizontalBar.move?'background-color:#a1a1a1;':'background-color:#c1c1c1;'"></div>
@@ -15,6 +15,15 @@
                     <div :style="verticalBar.move?'background-color:#a1a1a1;':'background-color:#c1c1c1;'"></div>
                 </div>
             </div>
+        </div>
+        <div v-if="showMenu" class="right-menu" :style="{ top:menuPosition.top,left:menuPosition.left }">
+            <ul>
+                <li>自定义菜单</li>
+                <li>自定义菜单</li>
+                <li>自定义菜单</li>
+                <li>自定义菜单</li>
+                <li>自定义菜单</li>
+            </ul>
         </div>
     </div>
 </template>
@@ -53,6 +62,11 @@ export default {
             selectArea: null,
             inputStyles: {},
             valueTemp: '',
+            showMenu: false,
+            menuPosition: {
+                top: 0,
+                left: 0,
+            },
         }
     },
     computed: {
@@ -328,6 +342,12 @@ export default {
             }
             return false
         },
+        rightClick(e) {
+            e.preventDefault()
+            this.showMenu = true
+            this.menuPosition.left = `${e.clientX}px`
+            this.menuPosition.top = `${e.clientY}px`
+        },
     },
 }
 </script>
@@ -355,6 +375,27 @@ export default {
       background-color: #fff;
       z-index: 10;
       line-height: 19px;
+    }
+  }
+  .right-menu {
+    position: fixed;
+    border: 1px solid #ccc;
+    background-color:#fff;
+    box-shadow:2px 2px 3px #ddd;
+    ul {
+    margin:0;
+      padding: 0;
+      li {
+        list-style: none;
+          font-size:12px;
+          padding:0 20px;
+          line-height:28px;
+          cursor: default;
+          &:hover{
+              background-color:#ececec;
+          }
+
+      }
     }
   }
 }
