@@ -3,7 +3,7 @@
         <div class="toolbar">表格！！！！！{{ratio}}</div>
         <div class="spreadtable-main">
             <div class="input-content" :style="inputStyles" ref="input" contenteditable="true" @input="setValueTemp" @keydown.tab.prevent @keydown.enter.prevent @keydown.esc.prevent></div>
-            <canvas v-if="hasSize" ref="canvas" class="canvas-spreadtable" :width="canvasWidth*ratio" :height="canvasHeight*ratio" :style="`width:${canvasWidth}px;height:${canvasHeight}px;`" @contextmenu="rightClick"></canvas>
+            <canvas v-if="hasSize" ref="canvas" class="canvas-spreadtable" :width="canvasWidth*ratio" :height="canvasHeight*ratio" :style="`width:${canvasWidth}px;height:${canvasHeight}px;`"></canvas>
             <div class="horizontal-container" style="width:20px" @click="scroll($event,0)">
                 <div class="scroll-bar-horizontal" ref="horizontal" @mousedown="dragMove($event,0)" :style="{width:horizontalBar.size+'px',left:horizontalBar.x+'px'}">
                     <div :style="horizontalBar.move?'background-color:#a1a1a1;':'background-color:#c1c1c1;'"></div>
@@ -341,12 +341,6 @@ export default {
                 return true
             }
             return false
-        },
-        rightClick(e) {
-            e.preventDefault()
-            this.showMenu = true
-            this.menuPosition.left = `${e.clientX}px`
-            this.menuPosition.top = `${e.clientY}px`
         },
     },
 }

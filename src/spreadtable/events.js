@@ -327,9 +327,11 @@ export default {
             this.init()
         },
         handleContextMenu(e) {
+            console.log(e.offsetX, e.offsetY)
             e.preventDefault()
-            console.log(e)
-            return false
+            this.showMenu = true
+            this.menuPosition.left = `${e.clientX}px`
+            this.menuPosition.top = `${e.clientY}px`
         },
     },
 }
