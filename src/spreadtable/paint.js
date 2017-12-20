@@ -43,7 +43,7 @@ export default {
 
             if (this.isFocusCopyDown && this.focusCopy) {
                 ctx.strokeStyle = '#237245'
-                ctx.strokeRect(this.focusCopy.x, this.focusCopy.y, this.focusCopy.width, this.focusCopy.height)
+                ctx.strokeRect(this.focusCopy.x * ratio, this.focusCopy.y * ratio, this.focusCopy.width * ratio, this.focusCopy.height * ratio)
             }
 
             if (this.selectArea) {

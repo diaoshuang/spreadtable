@@ -155,6 +155,7 @@ export default {
                 this.hoverColumnDivide = null
             }
             if (this.isDown) {
+                console.log(e)
                 const { realX: x, realY: y, width, height, row, cell: cellIndex } = this.getDisplayCell(this.focusCell)
                 if (eX >= x && eX <= x + width && eY >= y && eY <= y + height) {
                     this.selectArea = null
