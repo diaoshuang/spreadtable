@@ -1,5 +1,5 @@
 <template>
-    <div ref="spreadtable" class="spreadtable" :style="containerStyle" @click="showMenu = false">
+    <div ref="spreadtable" class="spreadtable" :style="containerStyle" @click="hideMenu">
         <div class="toolbar">表格！！！！！{{ratio}}</div>
         <div class="spreadtable-main">
             <div class="input-content" :style="inputStyles" ref="input" contenteditable="true" @input="setValueTemp" @keydown.tab.prevent @keydown.enter.prevent @keydown.esc.prevent></div>
@@ -9,15 +9,17 @@
                     <div :style="horizontalBar.move?'background-color:#a1a1a1;':'background-color:#c1c1c1;'"></div>
                 </div>
             </div>
-
             <div class="vertical-container" style="height:20px" @click="scroll($event,1)">
                 <div class="scroll-bar-vertical" ref="horizontal" @mousedown="dragMove($event,1)" :style="{height:verticalBar.size+'px',top:verticalBar.y+'px'}">
                     <div :style="verticalBar.move?'background-color:#a1a1a1;':'background-color:#c1c1c1;'"></div>
                 </div>
             </div>
         </div>
-        <div v-if="showMenu" class="right-menu" :style="{ top:menuPosition.top,left:menuPosition.left }">
+        <div class="right-menu" :style="menuPosition">
             <ul>
+                <li v-if="cornerClick" @click="setWidthHeight">设置宽度和高度</li>
+                <li v-if="topClick" @click="setWidth">设置宽度</li>
+                <li v-if="leftClick" @click="setHeight">设置高度</li>
                 <li>自定义菜单</li>
                 <li>自定义菜单</li>
                 <li>自定义菜单</li>
@@ -64,9 +66,12 @@ export default {
             valueTemp: '',
             showMenu: false,
             menuPosition: {
-                top: 0,
-                left: 0,
+                top: '10000px',
+                left: '10000px',
             },
+            cornerClick: false,
+            topClick: false,
+            leftClick: false,
         }
     },
     computed: {
@@ -342,6 +347,21 @@ export default {
             }
             return false
         },
+        hideMenu() {
+            this.menuPosition = {
+                top: '10000px',
+                left: '10000px',
+            }
+        },
+        setWidth() {
+
+        },
+        setHeight() {
+
+        },
+        setWidthHeight() {
+
+        },
     },
 }
 </script>
@@ -355,8 +375,8 @@ export default {
   .spreadtable-main {
     position: relative;
     canvas {
-      border: 1px solid #bdbbbc;
-      user-select: none;
+        border: 1px solid #bdbbbc;
+        user-select: none;
     }
     .input-content {
       top: -10000px;
@@ -373,6 +393,7 @@ export default {
   }
   .right-menu {
     position: fixed;
+    width:130px;
     border: 1px solid #ccc;
     background-color:#fff;
     box-shadow:2px 2px 3px #ddd;
