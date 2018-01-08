@@ -119,10 +119,7 @@ export default {
             return this.canvasWidth > 0 && this.canvasHeight > 0
         },
         focusCellItem() {
-            return this.getDisplayCell(this.focusCell)
-        },
-        globalFocusCellItem() {
-            return this.getCell(this.focusCell)
+            return this.getFocusCell(this.focusCell)
         },
         focusPosition() {
             return this.words[this.focusCell[1]] + (this.focusCell[0] + 1)
@@ -184,14 +181,19 @@ export default {
             }
         },
         getCellAt(x, y) {
-            for (const rows of this.display.cells) {
-                for (const cell of rows) {
-                    if (x >= cell.realX && y >= cell.realY && x < cell.realX + cell.width && y < cell.realY + cell.height) {
-                        return cell
-                    }
+            let rowIndex = 0
+            let cellIndex = 0
+            for (const row of this.display.rows) {
+                if (y >= row.realY && y <= row.realY + row.height) {
+                    rowIndex = row.row
                 }
             }
-            return null
+            for (const column of this.display.columns) {
+                if (x >= column.realX && x <= column.realX + column.width) {
+                    cellIndex = column.cell
+                }
+            }
+            return this.getFocusCell([rowIndex, cellIndex])
         },
         getRowAt(y) {
             for (const row of this.display.rows) {
@@ -200,6 +202,12 @@ export default {
                 }
             }
             return null
+        },
+        getFocusCell(focusCell) {
+            const cell = this.getCell(focusCell)
+            cell.realX = cell.x + this.offset[0]
+            cell.realY = cell.y + this.offset[1]
+            return cell
         },
         isInRowDivide(y) {
             for (const row of this.display.rows) {
@@ -273,50 +281,33 @@ export default {
             }
             return null
         },
-        getDisplayCell([x, y]) {
-            if (this.display.rows.length > 0 && this.display.columns.length > 0) {
-                const firstRowIndex = this.display.rows[0].row
-                const firstCellIndex = this.display.columns[0].cell
-                const lastRowIndex = this.display.rows[this.display.rows.length - 1].row
-                const lastCellIndex = this.display.columns[this.display.columns.length - 1].cell
-                if (x >= firstRowIndex && x <= lastRowIndex && y >= firstCellIndex && y <= lastCellIndex) {
-                    return this.display.cells[x - firstRowIndex][y - firstCellIndex]
-                }
+        isDisplayFocusCell(focusCell) {
+            if (focusCell.realX + focusCell.width >= config.width.serial && focusCell.realX < this.canvasWidth
+                && focusCell.realY + focusCell.height > config.height.columns && focusCell.realY < this.canvasHeight) {
+                return true
             }
-            return null
+            return false
         },
         getCell([x, y]) {
             return this.allCells[x][y]
         },
-        getFocusRowAndColumn([x, y]) {
-            const firstRowIndex = this.display.rows[0].row
-            const firstCellIndex = this.display.columns[0].cell
-            const lastRowIndex = this.display.rows[this.display.rows.length - 1].row
-            const lastCellIndex = this.display.columns[this.display.columns.length - 1].cell
+        getFocusRowAndColumn(focusCell, selectArea) {
             let focusRow = null
             let focusColumn = null
-            if (this.selectArea) {
-                focusColumn = { x: this.selectArea.x, width: this.selectArea.width }
-                focusRow = { y: this.selectArea.y, height: this.selectArea.height }
+            if (selectArea) {
+                focusColumn = { x: selectArea.x, width: selectArea.width }
+                focusRow = { y: selectArea.y, height: selectArea.height }
             } else {
-                if (y >= firstCellIndex && y <= lastCellIndex) {
-                    const width = this.display.columns[y - firstCellIndex].width
-                    const x = this.display.columns[y - firstCellIndex].realX
-                    focusColumn = { x, width }
-                }
-                if (x >= firstRowIndex && x <= lastRowIndex) {
-                    const height = this.display.rows[x - firstRowIndex].height
-                    const y = this.display.rows[x - firstRowIndex].realY
-                    focusRow = { y, height }
-                }
+                focusRow = { y: focusCell.realY, height: focusCell.height }
+                focusColumn = { x: focusCell.realX, width: focusCell.width }
             }
             return { focusRow, focusColumn }
         },
         setValueTemp(e) {
             this.valueTemp = e.target.innerText
-            let { x, y } = this.globalFocusCellItem
-            x += this.offset[0]
-            y += this.offset[1]
+            const focusCellItem = this.getFocusCell(this.focusCell)
+            const { width, height, row, cell } = focusCellItem
+            let { x, y } = focusCellItem
             if (x < config.width.serial) {
                 this.offset.x += config.width.serial - x
                 x = config.width.serial
@@ -328,7 +319,7 @@ export default {
 
             if (!this.isPaste) {
                 // 正常键盘录入
-                this.showInput(x, y, this.globalFocusCellItem.width, this.globalFocusCellItem.height)
+                this.showInput(x, y, width, height)
             } else if (!this.isEditing) {
                 this.isPaste = false
                 const objE = document.createElement('div')
@@ -349,7 +340,7 @@ export default {
                                 arrTmp.push(str)
                                 const colspan = td.getAttribute('colspan')
                                 if (colspan) {
-                                    for (let i = 1; i < colspan; i += 1) {
+                                    for (let j = 1; j < colspan; j += 1) {
                                         arrTmp.push('')
                                     }
                                 }
@@ -363,15 +354,15 @@ export default {
                 }
                 const modifyData = []
                 let lastCellIndex = 0
-                let startRowIndex = this.globalFocusCellItem.row
-                for (const row of pasteData) {
+                let startRowIndex = row
+                for (const rowData of pasteData) {
                     if (startRowIndex < this.allRows.length) {
-                        let startCellIndex = this.globalFocusCellItem.cell
+                        let startCellIndex = cell
                         const temp = []
-                        for (let i = 0; i < row.length; i += 1) {
+                        for (let i = 0; i < rowData.length; i += 1) {
                             temp.push({
                                 anchor: [startRowIndex, startCellIndex],
-                                value: row[i],
+                                value: rowData[i],
                             })
                             startCellIndex += 1
                         }
@@ -382,16 +373,15 @@ export default {
                         startRowIndex += 1
                     }
                 }
+
                 startRowIndex -= 1
-                const { x, y, row, cell: cellIndex } = this.globalFocusCellItem
-                const cell = this.getCell([startRowIndex, lastCellIndex])
-                cell.realX = cell.x + this.offset[0]
-                cell.realY = cell.y + this.offset[1]
+                const lastCell = this.getFocusCell([startRowIndex, lastCellIndex])
                 if (startRowIndex - row > 1 || lastCellIndex - cell > 0) {
-                    this.selectArea = { type: 0, x: x + this.offset[0], y: y + this.offset[1], width: (cell.realX - x) + cell.width, height: (cell.realY - y) + cell.height, cell: cellIndex, row, offset: [...this.offset] }
+                    this.selectArea = { type: 0, x, y, width: (lastCell.realX - x) + lastCell.width, height: (lastCell.realY - y) + lastCell.height, cell, row, offset: [...this.offset] }
                     this.selectArea.RowCount = startRowIndex - row
                     this.selectArea.cellCount = lastCellIndex - cell
                 }
+
                 this.$emit('updateItems', modifyData)
             } else {
                 // 编辑状态下

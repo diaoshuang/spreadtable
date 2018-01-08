@@ -1,13 +1,23 @@
-export default {
+const utils = {
     half(value) {
+        let temp = value
         if (!isNaN(value)) {
-            value = parseFloat(value)
-            return value / 2
+            temp = parseFloat(value)
+            return temp / 2
         }
-        return value
+        return temp
     },
     pxFix(value) {
         return value + 0.5
+    },
+    mapPoint(x, y, fix) {
+        if (fix) {
+            return [utils.pxFix(x) * this.ratio, utils.pxFix(y) * this.ratio]
+        }
+        return [x * this.ratio, y * this.ratio]
+    },
+    mapSize(width, height) {
+        return [width * this.ratio, height * this.ratio]
     },
     getTextLine(ctx, text, width) {
         if (!text && text !== 0) {
@@ -27,7 +37,8 @@ export default {
         return row
     },
     isInRegion(point, startPoint, endPoint) {
-        return point[0] > startPoint[0] && point[0] < endPoint[0] && point[1] > startPoint[1] && point[1] < endPoint[1]
+        return point[0] > startPoint[0] && point[0] < endPoint[0]
+            && point[1] > startPoint[1] && point[1] < endPoint[1]
     },
     keepLastIndex(obj) {
         if (window.getSelection) { // ie11 10 9 ff safari
@@ -73,3 +84,5 @@ export default {
         return value
     },
 }
+
+export default utils

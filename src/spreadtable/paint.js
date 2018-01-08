@@ -1,106 +1,140 @@
 import config from './config'
 import utils from './utils'
 
+let { mapPoint, mapSize } = utils
+
+const FIX = true
+
 export default {
+    created() {
+        mapPoint = mapPoint.bind(this)
+        mapSize = mapSize.bind(this)
+    },
     methods: {
         painted() {
-            const items = this.getDisplayItems()
+            const time = Date.now()
+            // const items = this.getDisplayItems()
             this.clearPainted()
-            this.doDraw(items)
+            this.doDraw()
+            console.log(Date.now() - time)
         },
         paintedImage() {
-            const pluginCtx = this.canvasPlugin
-            pluginCtx.clearRect((config.width.serial + 1) * this.ratio, (config.height.columns + 1) * this.ratio, (this.canvasWidth - config.width.serial - 1) * this.ratio, (this.canvasHeight - config.height.columns - 1) * this.ratio)
-            if (this.imageObjs.length > 0) {
-                this.paintImage(pluginCtx, this.imageObjs)
+            const { canvasPlugin, canvasWidth, canvasHeight, imageObjs } = this
+            canvasPlugin.clearRect(
+                ...mapPoint(config.width.serial + 1, config.height.columns),
+                ...mapSize(canvasWidth - config.width.serial - 1, canvasHeight - config.height.columns - 1),
+            )
+            if (imageObjs.length > 0) {
+                this.paintImage(canvasPlugin, imageObjs)
             }
         },
         clearPainted() {
-            this.canvas.clearRect(0, 0, this.canvasWidth * this.ratio, this.canvasHeight * this.ratio)
-            this.canvasPlugin.clearRect(0, 0, this.canvasWidth * this.ratio, this.canvasHeight * this.ratio)
+            const { canvasWidth, canvasHeight } = this
+            this.canvas.clearRect(0, 0, ...mapSize(canvasWidth, canvasHeight))
+            this.canvasPlugin.clearRect(0, 0, ...mapSize(canvasWidth, canvasHeight))
         },
-        doDraw({ displayRows, displayColumns, displayCells }) {
-            const ctx = this.canvas
-            const pluginCtx = this.canvasPlugin
-            this.paintMain(ctx, pluginCtx, displayRows, displayColumns, displayCells)
+        doDraw() {
+            const { allRows, allCells, allColumns, canvas, canvasPlugin } = this
+            this.paintMain(canvas, canvasPlugin, allColumns, allRows, allCells)
         },
-        paintMain(ctx, pluginCtx, displayRows, displayColumns, displayCells) {
-            const { canvasWidth, canvasHeight, ratio } = this
+        paintMain(ctx, pluginCtx, columns, rows, cells) {
+            const { canvasWidth, canvasHeight, ratio, selectArea, offset: [oX, oY],
+                focusCell, focusCopy, hoverRowDivide, hoverColumnDivide, imageObjs } = this
+            const focusCellItem = this.getFocusCell(focusCell)
             ctx.beginPath()
             ctx.lineWidth = 1 * ratio
             ctx.strokeStyle = '#cecece'
-            ctx.textAlign = 'center'
             // column  纵线
-            for (const { realX: x, width } of displayColumns) {
-                if (width !== 0) {
-                    ctx.moveTo(utils.pxFix((x + width) * ratio), config.height.columns * ratio)
-                    ctx.lineTo(utils.pxFix((x + width) * ratio), canvasHeight * ratio)
+            const displayColumns = []
+            for (const item of columns) {
+                const { x, width } = item
+                item.realX = x + oX
+                if (item.realX + width >= config.width.serial && item.realX <= canvasWidth) {
+                    if (width !== 0) {
+                        ctx.moveTo(...mapPoint(item.realX + width, config.height.columns, FIX))
+                        ctx.lineTo(...mapPoint(item.realX + width, canvasHeight, FIX))
+                    }
+                    displayColumns.push(item)
+                } else if (displayColumns.length > 0) {
+                    break
                 }
             }
             // row 横线
-            for (const { realY: y, height } of displayRows) {
-                ctx.moveTo(config.width.serial * ratio, utils.pxFix((y + height) * ratio))
-                ctx.lineTo(canvasWidth * ratio, utils.pxFix((y + height) * ratio))
+            const displayRows = []
+            for (const item of rows) {
+                const { y, height } = item
+                item.realY = y + oY
+                if (item.realY + height >= config.height.columns && item.realY <= canvasHeight) {
+                    ctx.moveTo(...mapPoint(config.width.serial, item.realY + height, FIX))
+                    ctx.lineTo(...mapPoint(canvasWidth, item.realY + height, FIX))
+                    displayRows.push(item)
+                } else if (displayRows.length > 0) {
+                    break
+                }
             }
             ctx.stroke()
 
-            const focusCell = this.getDisplayCell(this.focusCell)
-            const { focusRow: _focusRow, focusColumn: _focusColumn } = this.getFocusRowAndColumn(this.focusCell)
-            const focusRow = _focusRow
-            const focusColumn = _focusColumn
+            this.display.columns = [...displayColumns]
+            this.display.rows = [...displayRows]
 
+            const cellsRowStart = displayRows[0].row
+            const cellsRowEnd = displayRows[displayRows.length - 1].row
+            const cellsColumnStart = displayColumns[0].cell
+            const cellsColumnEnd = displayColumns[displayColumns.length - 1].cell
             // 绘制数据
-            this.paintData(ctx, displayCells)
+            this.paintData(ctx, cells, cellsRowStart, cellsRowEnd, cellsColumnStart, cellsColumnEnd)
 
-            if (this.isFocusCopyDown && this.focusCopy) {
+            if (this.isFocusCopyDown && focusCopy) {
                 ctx.strokeStyle = '#237245'
                 ctx.fillStyle = 'rgba(36,114,69,0.05)'
-                ctx.strokeRect(this.focusCopy.x * ratio, this.focusCopy.y * ratio, this.focusCopy.width * ratio, (this.focusCopy.height + 1) * ratio)
-                ctx.fillRect(this.focusCopy.x * ratio, this.focusCopy.y * ratio, this.focusCopy.width * ratio, (this.focusCopy.height + 1) * ratio)
+                ctx.strokeRect(...mapPoint(focusCopy.x, focusCopy.y), ...mapSize(focusCopy.width, focusCopy.height))
+                ctx.fillRect(...mapPoint(focusCopy.x, focusCopy.y), ...mapSize(focusCopy.width, focusCopy.height))
             }
 
-            if (this.selectArea) {
-                this.paintFocusAndSelect(ctx, focusCell, this.selectArea)
-            } else if (focusCell) {
-                this.paintFocus(ctx, focusCell)
+            if (selectArea) {
+                this.paintFocusAndSelect(ctx, focusCellItem, selectArea)
+            } else if (focusCellItem) {
+                this.paintFocus(ctx, focusCellItem)
             }
 
-            if (this.imageObjs.length > 0) {
-                this.paintImage(pluginCtx, this.imageObjs)
+            if (imageObjs.length > 0) {
+                this.paintImage(pluginCtx, imageObjs)
             }
 
             if (this.isHoverRowDivideDown) {
                 ctx.beginPath()
-                ctx.strokeStyle = '#000'
-                ctx.moveTo(0, this.hoverRowDivide.y * ratio)
-                ctx.lineTo(this.canvasWidth * ratio, this.hoverRowDivide.y * ratio)
-                ctx.moveTo(0, this.hoverRowDivide.row.realY * ratio)
-                ctx.lineTo(this.canvasWidth * ratio, this.hoverRowDivide.row.realY * ratio)
+                ctx.strokeStyle = '#333'
+                ctx.moveTo(...mapPoint(0, hoverRowDivide.y))
+                ctx.lineTo(...mapPoint(canvasWidth, hoverRowDivide.y))
+                ctx.moveTo(...mapPoint(0, hoverRowDivide.row.realY))
+                ctx.lineTo(...mapPoint(canvasWidth, this.hoverRowDivide.row.realY))
                 ctx.stroke()
             }
             if (this.isHoverColumnDivideDown) {
                 ctx.beginPath()
-                ctx.strokeStyle = '#000'
-                ctx.moveTo(this.hoverColumnDivide.x * ratio, 0)
-                ctx.lineTo(this.hoverColumnDivide.x * ratio, this.canvasHeight * ratio)
-                ctx.moveTo(this.hoverColumnDivide.column.realX * ratio, 0)
-                ctx.lineTo(this.hoverColumnDivide.column.realX * ratio, this.canvasHeight * ratio)
+                ctx.strokeStyle = '#333'
+                ctx.moveTo(...mapPoint(hoverColumnDivide.x, 0))
+                ctx.lineTo(...mapPoint(hoverColumnDivide.x, canvasHeight))
+                ctx.moveTo(...mapPoint(hoverColumnDivide.column.realX, 0))
+                ctx.lineTo(...mapPoint(hoverColumnDivide.column.realX, canvasHeight))
                 ctx.stroke()
             }
-            this.paintBorder(pluginCtx, focusRow, focusColumn, focusCell, displayColumns, displayRows)
+
+            const { focusRow, focusColumn } = this.getFocusRowAndColumn(focusCellItem, selectArea)
+            this.paintBorder(pluginCtx, focusRow, focusColumn, focusCellItem, displayColumns, displayRows)
         },
-        paintBorder(ctx, focusRow, focusColumn, focusCell, displayColumns, displayRows) {
-            const { ratio, canvasWidth, canvasHeight } = this
+        paintBorder(ctx, focusRow, focusColumn, focusCellItem, displayColumns, displayRows) {
+            const { ratio, canvasWidth, canvasHeight, selectArea } = this
             ctx.fillStyle = '#f5f5f5'
             ctx.fillRect(...this.points.columns)
             ctx.fillRect(...this.points.serial)
 
             ctx.fillStyle = '#e0e0e0'
             if (focusRow) {
-                ctx.fillRect(0, focusRow.y * ratio, config.width.serial * ratio, focusRow.height * ratio)
+                ctx.fillRect(...mapPoint(0, focusRow.y), ...mapSize(config.width.serial, focusRow.height))
             }
             if (focusColumn) {
-                ctx.fillRect(focusColumn.x * ratio, 0, focusColumn.width * ratio, config.height.columns * ratio)
+                ctx.fillRect(...mapPoint(focusColumn.x, 0), ...mapSize(focusColumn.width, config.height.columns))
             }
             ctx.beginPath()
             ctx.lineWidth = 1 * ratio
@@ -113,64 +147,64 @@ export default {
                     ctx.beginPath()
                     ctx.lineWidth = 3 * ratio
                     ctx.strokeStyle = '#237245'
-                    ctx.moveTo(utils.pxFix(x * ratio), 0)
-                    ctx.lineTo(utils.pxFix(x * ratio), config.height.columns * ratio)
+                    ctx.moveTo(...mapPoint(x, 0, FIX))
+                    ctx.lineTo(...mapPoint(x, config.height.columns, FIX))
                     ctx.stroke()
                     ctx.beginPath()
                     ctx.strokeStyle = '#cecece'
                     ctx.lineWidth = 1 * ratio
                 } else {
-                    ctx.moveTo(utils.pxFix((x + width) * ratio), 0)
-                    ctx.lineTo(utils.pxFix((x + width) * ratio), config.height.columns * ratio)
+                    ctx.moveTo(...mapPoint(x + width, 0, FIX))
+                    ctx.lineTo(...mapPoint(x + width, config.height.columns, FIX))
                     if (width > 10) {
-                        this.paintText(ctx, (x + utils.half(width)) * ratio, 13 * ratio, [title])
+                        this.paintText(ctx, ...mapPoint(x + utils.half(width), 13), [title])
                     } else if (width > 0) {
-                        this.paintText(ctx, (x + utils.half(width)) * ratio, 13 * ratio, ['.'])
+                        this.paintText(ctx, ...mapPoint(x + utils.half(width), 13), ['.'])
                     }
                 }
             }
             // row 横线
             for (const { realY: y, row, height } of displayRows) {
-                ctx.moveTo(0, utils.pxFix((y + height) * ratio))
-                ctx.lineTo(config.width.serial * ratio, utils.pxFix((y + height) * ratio))
-                this.paintText(ctx, utils.half(config.width.serial) * ratio, (y + 11) * ratio, [row + 1])
+                ctx.moveTo(...mapPoint(0, y + height, FIX))
+                ctx.lineTo(...mapPoint(config.width.serial, y + height))
+                this.paintText(ctx, ...mapPoint(utils.half(config.width.serial), y + 11), [row + 1])
             }
             ctx.stroke()
 
             ctx.beginPath()
             ctx.strokeStyle = '#bdbbbc'
-            ctx.moveTo(config.width.serial * ratio, utils.pxFix(config.height.columns * ratio))
-            ctx.lineTo(canvasWidth * ratio, utils.pxFix(config.height.columns * ratio))
-            ctx.moveTo(utils.pxFix(config.width.serial * ratio), config.height.columns * ratio)
-            ctx.lineTo(utils.pxFix(config.width.serial * ratio), canvasHeight * ratio)
+            ctx.moveTo(...mapPoint(config.width.serial, config.height.columns, FIX))
+            ctx.lineTo(...mapPoint(canvasWidth, config.height.columns, FIX))
+            ctx.moveTo(...mapPoint(config.width.serial, config.height.columns, FIX))
+            ctx.lineTo(...mapPoint(config.width.serial, canvasHeight, FIX))
             ctx.stroke()
 
-            this.paintFocusRowAndColumnLine(ctx, focusRow, focusColumn, focusCell)
+            this.paintFocusRowAndColumnLine(ctx, focusRow, focusColumn, focusCellItem, selectArea)
 
             ctx.fillStyle = '#fbfbfb'
-            ctx.fillRect(0, 0, config.width.serial * ratio, config.height.columns * ratio)
+            ctx.fillRect(...mapPoint(0, 0), ...mapSize(config.width.serial, config.height.columns))
 
             ctx.beginPath()
             ctx.lineWidth = 1 * ratio
             ctx.strokeStyle = '#cecece'
-            ctx.moveTo(utils.pxFix(config.width.serial * ratio), 0)
-            ctx.lineTo(utils.pxFix(config.width.serial * ratio), utils.pxFix(config.height.columns * ratio))
-            ctx.lineTo(0, utils.pxFix(config.height.columns * ratio))
+            ctx.moveTo(...mapPoint(config.width.serial, 0, FIX))
+            ctx.lineTo(...mapPoint(config.width.serial, config.height.columns, FIX))
+            ctx.lineTo(...mapPoint(0, config.height.columns, FIX))
             ctx.stroke()
 
-            if (focusRow && focusColumn && focusRow.y <= config.height.columns && focusColumn.x <= config.width.serial) {
+            if (focusRow.y + focusRow.height >= config.height.columns && focusColumn.x + focusColumn.width >= config.width.serial && focusRow.y <= config.height.columns && focusColumn.x <= config.width.serial) {
                 ctx.fillStyle = '#237245'
-                ctx.fillRect((config.width.serial - 1) * ratio, (config.height.columns - 1) * ratio, 2 * ratio, 2 * ratio)
+                ctx.fillRect(...mapPoint(config.width.serial - 1, config.height.columns - 1), ...mapSize(2, 2))
             }
 
             ctx.beginPath()
-            ctx.moveTo((config.width.serial - 3.5) * ratio, 7 * ratio)
-            ctx.lineTo((config.width.serial - 3.5) * ratio, (config.height.columns - 3.5) * ratio)
-            ctx.lineTo(12 * ratio, (config.height.columns - 3.5) * ratio)
+            ctx.moveTo(...mapPoint(config.width.serial - 3.5, 7))
+            ctx.lineTo(...mapPoint(config.width.serial - 3.5, config.height.columns - 3.5))
+            ctx.lineTo(...mapPoint(12, config.height.columns - 3.5))
             ctx.closePath()
             ctx.strokeStyle = '#dfdfdf'
             ctx.fillStyle = '#dfdfdf'
-            if (this.selectArea && this.selectArea.width === Infinity && this.selectArea.height === Infinity) {
+            if (selectArea && selectArea.width === Infinity && selectArea.height === Infinity) {
                 ctx.fillStyle = '#237245'
                 ctx.strokeStyle = '#237245'
             }
@@ -197,54 +231,54 @@ export default {
                 ctx.beginPath()
                 ctx.lineWidth = 2 * ratio
                 ctx.strokeStyle = '#237245'
-                ctx.strokeRect(cell.realX * ratio, cell.realY * ratio, (cell.width + 1) * ratio, (cell.height + 1) * ratio)
+                ctx.strokeRect(...mapPoint(cell.realX, cell.realY), ...mapSize(cell.width + 1, cell.height + 1))
 
                 // 右下角小点
                 ctx.fillStyle = '#ffffff'
                 ctx.lineWidth = 1 * ratio
-                ctx.fillRect(utils.pxFix(((cell.realX + cell.width) - 4) * ratio), utils.pxFix(((cell.realY + cell.height) - 4) * ratio), 7 * ratio, 7 * ratio)
+                ctx.fillRect(...mapPoint((cell.realX + cell.width) - 4, (cell.realY + cell.height) - 4), ...mapSize(7, 7))
                 ctx.fillStyle = '#237245'
-                ctx.fillRect(((cell.realX + cell.width) - 3) * ratio, ((cell.realY + cell.height) - 3) * ratio, 6 * ratio, 6 * ratio)
+                ctx.fillRect(...mapPoint((cell.realX + cell.width) - 3, (cell.realY + cell.height) - 3), ...mapSize(6, 6))
                 ctx.stroke()
             }
         },
         paintFocusAndSelect(ctx, cell, area) {
-            const { canvasWidth, canvasHeight, ratio } = this
+            const { canvasWidth, canvasHeight, ratio, bodyWidth, bodyHeight, allColumns, allCells } = this
             if (area.x + area.width > config.width.serial && area.y + area.height > config.height.columns && area.x < canvasWidth && area.y < canvasHeight) {
                 let width = area.width
                 let height = area.height
                 if (width === Infinity) {
-                    width = this.bodyWidth
+                    width = bodyWidth
                 }
                 if (height === Infinity) {
-                    height = this.bodyHeight
+                    height = bodyHeight
                 }
                 ctx.beginPath()
                 ctx.lineWidth = 2 * ratio
                 ctx.strokeStyle = '#237245'
-                ctx.strokeRect(area.x * ratio, area.y * ratio, (width + 1) * ratio, (height + 1) * ratio)
+                ctx.strokeRect(...mapPoint(area.x, area.y), ...mapSize(width + 1, height + 1))
                 ctx.fillStyle = 'rgba(0,0,0,0.1)'
-                ctx.fillRect((area.x + 2) * ratio, (area.y + 2) * ratio, (width - 3) * ratio, (height - 3) * ratio)
+                ctx.fillRect(...mapPoint(area.x + 2, area.y + 2), ...mapSize(width - 3, height - 3))
                 ctx.fillStyle = '#fff'
                 if (cell) {
-                    ctx.fillRect((cell.realX + 1) * ratio, (cell.realY + 1) * ratio, (cell.width - 1) * ratio, (cell.height - 1) * ratio)
+                    ctx.fillRect(...mapPoint(cell.realX + 1, cell.realY + 1), ...mapSize(cell.width - 1, cell.height - 1))
                     if (cell.paintText) {
                         if (cell.type === 'text') {
                             ctx.textAlign = 'left'
                             let maxWidth = null
-                            if (cell.cell < this.allColumns.length - 1 && (this.allCells[cell.row][cell.cell + 1].text || this.allCells[cell.row][cell.cell + 1].text === 0)) {
+                            if (cell.cell < allColumns.length - 1 && (allCells[cell.row][cell.cell + 1].text || allCells[cell.row][cell.cell + 1].text === 0)) {
                                 maxWidth = cell.width
                             }
                             ctx.fillStyle = '#fff'
                             if (!maxWidth) {
-                                ctx.fillRect((cell.x + 2) * ratio, (cell.y + 1) * ratio, ctx.measureText(cell.paintText).width, (cell.height - 1) * ratio)
+                                ctx.fillRect(...mapPoint(cell.x + 2, cell.y + 1), ...mapSize(ctx.measureText(cell.paintText).width / 2, cell.height - 1))
                             }
                             ctx.fillStyle = '#333'
-                            this.paintText(ctx, (cell.x + 2) * ratio, (cell.y + 11) * ratio, [cell.paintText], maxWidth * ratio)
+                            this.paintText(ctx, ...mapPoint(cell.x + 2, cell.y + 11), [cell.paintText], maxWidth * ratio)
                         } else {
                             ctx.textAlign = 'right'
                             ctx.fillStyle = '#333'
-                            this.paintText(ctx, ((cell.x + cell.width) - 2) * ratio, (cell.y + 11) * ratio, [cell.paintText])
+                            this.paintText(ctx, ...mapPoint((cell.x + cell.width) - 2, cell.y + 11), [cell.paintText])
                         }
                     }
                 }
@@ -258,88 +292,65 @@ export default {
                 ctx.stroke()
             }
         },
-        paintFocusRowAndColumnLine(ctx, focusRow, focusColumn, focusCell) {
+        paintFocusRowAndColumnLine(ctx, focusRow, focusColumn, focusCell, selectArea) {
+            const { bodyHeight, bodyWidth } = this
             if (focusRow || focusColumn) {
                 ctx.beginPath()
                 const ratio = this.ratio
                 ctx.lineWidth = 2 * ratio
                 ctx.strokeStyle = '#237245'
                 if (focusRow) {
-                    const height = (focusRow.height === Infinity) ? this.bodyHeight : focusRow.height
-                    if (this.selectArea) {
-                        if (this.selectArea.x <= config.width.serial && this.selectArea.x + this.selectArea.width >= config.width.serial) {
-                            ctx.moveTo(config.width.serial * ratio, (focusRow.y - 1) * ratio)
-                            ctx.lineTo(config.width.serial * ratio, (focusRow.y + height + 2) * ratio)
-                        } else {
-                            ctx.moveTo(config.width.serial * ratio, focusRow.y * ratio)
-                            ctx.lineTo(config.width.serial * ratio, (focusRow.y + height) * ratio)
-                        }
-                    } else if (focusCell) {
-                        if (focusCell.realX <= config.width.serial) {
-                            ctx.moveTo(config.width.serial * ratio, (focusRow.y - 1) * ratio)
-                            ctx.lineTo(config.width.serial * ratio, (focusRow.y + height + 2) * ratio)
-                        } else {
-                            ctx.moveTo(config.width.serial * ratio, focusRow.y * ratio)
-                            ctx.lineTo(config.width.serial * ratio, (focusRow.y + height) * ratio)
-                        }
+                    const height = (focusRow.height === Infinity) ? bodyHeight : focusRow.height
+                    if ((selectArea && selectArea.x <= config.width.serial && selectArea.x + selectArea.width >= config.width.serial) || focusCell.realX <= config.width.serial) {
+                        ctx.moveTo(...mapPoint(config.width.serial, focusRow.y - 1))
+                        ctx.lineTo(...mapPoint(config.width.serial, focusRow.y + height + 2))
                     } else {
-                        ctx.moveTo(config.width.serial * ratio, focusRow.y * ratio)
-                        ctx.lineTo(config.width.serial * ratio, (focusRow.y + height) * ratio)
+                        ctx.moveTo(...mapPoint(config.width.serial, focusRow.y))
+                        ctx.lineTo(...mapPoint(config.width.serial, focusRow.y + height))
                     }
                 }
                 if (focusColumn) {
-                    const width = (focusColumn.width === Infinity) ? this.bodyWidth : focusColumn.width
-                    if (this.selectArea) {
-                        if (this.selectArea.y <= config.height.columns && this.selectArea.y + this.selectArea.height >= config.height.columns) {
-                            ctx.moveTo((focusColumn.x - 1) * ratio, config.height.columns * ratio)
-                            ctx.lineTo((focusColumn.x + width + 2) * ratio, config.height.columns * ratio)
-                        } else {
-                            ctx.moveTo(focusColumn.x * ratio, config.height.columns * ratio)
-                            ctx.lineTo((focusColumn.x + width) * ratio, config.height.columns * ratio)
-                        }
-                    } else if (focusCell) {
-                        if (focusCell.y <= config.height.columns) {
-                            ctx.moveTo((focusColumn.x - 1) * ratio, config.height.columns * ratio)
-                            ctx.lineTo((focusColumn.x + width + 2) * ratio, config.height.columns * ratio)
-                        } else {
-                            ctx.moveTo(focusColumn.x * ratio, config.height.columns * ratio)
-                            ctx.lineTo((focusColumn.x + width) * ratio, config.height.columns * ratio)
-                        }
+                    const width = (focusColumn.width === Infinity) ? bodyWidth : focusColumn.width
+                    if ((selectArea && selectArea.y <= config.height.columns && selectArea.y + selectArea.height >= config.height.columns) || focusCell.realY <= config.height.columns) {
+                        ctx.moveTo(...mapPoint(focusColumn.x - 1, config.height.columns))
+                        ctx.lineTo(...mapPoint(focusColumn.x + width + 2, config.height.columns))
                     } else {
-                        ctx.moveTo(focusColumn.x * ratio, config.height.columns * ratio)
-                        ctx.lineTo((focusColumn.x + width) * ratio, config.height.columns * ratio)
+                        ctx.moveTo(...mapPoint(focusColumn.x, config.height.columns))
+                        ctx.lineTo(...mapPoint(focusColumn.x + width, config.height.columns))
                     }
                 }
                 ctx.stroke()
             }
         },
-        paintData(ctx, displayCells) {
+        paintData(ctx, cells, cellsRowStart, cellsRowEnd, cellsColumnStart, cellsColumnEnd) {
             ctx.beginPath()
-            const ratio = this.ratio
+            const { ratio, offset: [oX, oY] } = this
             ctx.font = `normal ${12 * ratio}px PingFang SC`
-            for (const rows of displayCells) {
-                let index = 0
-                for (const item of rows) {
+            ctx.textAlign = 'center'
+            for (let i = cellsRowStart; i < cellsRowEnd; i += 1) {
+                for (let j = cellsColumnStart; j < cellsColumnEnd; j += 1) {
+                    const item = cells[i][j]
                     if (item.paintText) {
+                        item.realX = item.x + oX
+                        item.realY = item.y + oY
                         if (item.type === 'text') {
                             ctx.textAlign = 'left'
                             let maxWidth = null
-                            if (index < rows.length - 1 && (rows[index + 1].text || rows[index + 1].text === 0)) {
+                            if (j < cellsRowEnd - 1 && (cells[i][j + 1].text || cells[i][j + 1].text === 0)) {
                                 maxWidth = item.width
                             }
                             ctx.fillStyle = '#fff'
                             if (!maxWidth) {
-                                ctx.fillRect((item.realX + 3) * ratio, (item.realY + 1) * ratio, ctx.measureText(item.paintText).width, (item.height - 1) * ratio)
+                                ctx.fillRect(...mapPoint(item.realX + 3, item.realY + 1), ...mapSize(ctx.measureText(item.paintText).width / ratio, item.height - 1))
                             }
                             ctx.fillStyle = '#333'
-                            this.paintText(ctx, (item.realX + 3) * ratio, (item.realY + 11) * ratio, [item.paintText], maxWidth * ratio)
+                            this.paintText(ctx, ...mapPoint(item.realX + 3, item.realY + 11), [item.paintText], maxWidth * ratio)
                         } else {
                             ctx.textAlign = 'right'
                             ctx.fillStyle = '#333'
-                            this.paintText(ctx, ((item.realX + item.width) - 3) * ratio, (item.realY + 11) * ratio, [item.paintText])
+                            this.paintText(ctx, ...mapPoint((item.realX + item.width) - 3, item.realY + 11), [item.paintText])
                         }
                     }
-                    index += 1
                 }
             }
             ctx.stroke()
@@ -368,13 +379,15 @@ export default {
             if (item.y < config.height.columns + 2) {
                 item.y = config.height.columns + 2
             }
-            ctx.moveTo(item.x - 1, item.y - 1)
-            ctx.lineTo(item.x + item.width + 2, item.y - 1)
-            ctx.lineTo(item.x + item.width + 2, item.y + item.height + 2)
-            ctx.lineTo(item.x - 1, item.y + item.height + 2)
+            ctx.strokeStyle = '#cecece'
+            ctx.moveTo(...mapPoint(item.x - 1, item.y - 1))
+            ctx.lineTo(...mapPoint(item.x + (item.width / 2) + 1, item.y - 1))
+            ctx.lineTo(...mapPoint(item.x + (item.width / 2) + 1, item.y + (item.height / 2) + 1))
+            ctx.lineTo(...mapPoint(item.x - 1, item.y + (item.height / 2) + 1))
             ctx.closePath()
             ctx.fill()
-            ctx.drawImage(item.img, item.x, item.y)
+            ctx.stroke()
+            ctx.drawImage(item.img, ...mapPoint(item.x, item.y))
             ctx.addHitRegion({ id: item.id })
         },
     },

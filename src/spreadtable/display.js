@@ -12,7 +12,9 @@ export default {
     },
     methods: {
         getDisplayItems() {
+            // const time = Date.now()
             const displayColumns = this.getDisplayColumns()
+            // console.log(Date.now() - time)
             const displayRows = this.getDisplayRows()
             const displayCells = this.getDisplayCells(displayRows, displayColumns)
             if (this.selectArea) {
@@ -41,16 +43,14 @@ export default {
             const { offset: [x], allColumns, canvasWidth } = this
             const temp = []
             for (const column of allColumns) {
-                if (!column.hidden) {
-                    const realX = column.x + x
-                    if (realX + column.width >= config.width.serial && realX < canvasWidth) {
-                        temp.push({ ...column, realX })
-                    } else if (realX >= canvasWidth) {
-                        break
-                    }
+                const realX = column.x + x
+                if (realX + column.width >= config.width.serial && realX < canvasWidth) {
+                    temp.push({ ...column, realX })
+                } else if (realX >= canvasWidth) {
+                    break
                 }
             }
-            this.display.columns = [...temp]
+            // this.display.columns = [...temp]
             return temp
         },
         getDisplayRows() {
