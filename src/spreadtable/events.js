@@ -364,7 +364,6 @@ export default {
             if (this.isHoverRowDivideDown) {
                 const differenceValue = this.hoverRowDivide.y - (this.hoverRowDivide.row.realY + this.hoverRowDivide.row.height)
                 this.allRows[this.hoverRowDivide.row.row].height += differenceValue
-
                 for (let i = this.hoverRowDivide.row.row + 1; i < this.allRows.length; i += 1) {
                     this.allRows[i].y += differenceValue
                 }
@@ -435,7 +434,11 @@ export default {
         },
         handleResize() {
             this.initSize()
-            requestAnimationFrame(this.painted)
+            if (this.hasSize) {
+                this.$nextTick(function () { //eslint-disable-line
+                    requestAnimationFrame(this.painted)
+                })
+            }
         },
         handleContextMenu(e) {
             e.preventDefault()

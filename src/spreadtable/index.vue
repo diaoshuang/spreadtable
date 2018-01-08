@@ -205,6 +205,12 @@ export default {
         },
         getFocusCell(focusCell) {
             const cell = this.getCell(focusCell)
+            const { height, y } = this.allRows[focusCell[0]]
+            const { width, x } = this.allColumns[focusCell[1]]
+            cell.height = height
+            cell.width = width
+            cell.x = x
+            cell.y = y
             cell.realX = cell.x + this.offset[0]
             cell.realY = cell.y + this.offset[1]
             return cell

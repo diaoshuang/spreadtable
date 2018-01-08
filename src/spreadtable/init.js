@@ -116,9 +116,6 @@ export default {
             ctx.font = `normal ${12 * this.ratio}px PingFang SC`
             ctx.textBaseline = 'middle'
             ctx.save()
-            pluginCtx.font = `normal ${12 * this.ratio}px PingFang SC`
-            pluginCtx.textBaseline = 'middle'
-            pluginCtx.save()
         },
     },
 }

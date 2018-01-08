@@ -141,6 +141,8 @@ export default {
             ctx.textAlign = 'center'
             ctx.strokeStyle = '#cecece'
             ctx.fillStyle = '#333333'
+            ctx.font = `normal ${12 * this.ratio}px PingFang SC`
+            ctx.textBaseline = 'middle'
             for (const { realX: x, title, width } of displayColumns) {
                 if (width === 0) {
                     ctx.stroke()
