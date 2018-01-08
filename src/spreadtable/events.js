@@ -429,9 +429,32 @@ export default {
         },
         handleContextMenu(e) {
             e.preventDefault()
+            const menuObj = document.getElementsByClassName('right-menu')
+            const canvas = document.getElementsByClassName('spreadtable-main')
+            const objX = document.documentElement.clientWidth
+            const objY = document.documentElement.clientHeight
+            console.log(e.offsetX, e.offsetY, menuObj, objX, objY, canvas)
             this.showMenu = true
-            this.menuPosition.left = `${e.clientX}px`
-            this.menuPosition.top = `${e.clientY}px`
+            this.topClick = false
+            this.leftClick = false
+            this.menuPosition = {
+                left: `${e.clientX}px`,
+                top: `${e.clientY}px`,
+            }
+            if (e.offsetX + menuObj[0].offsetWidth > this.canvasWidth) {
+                this.menuPosition.left = `${this.canvasWidth - menuObj[0].offsetWidth}px`
+            }
+            if (e.offsetY + menuObj[0].offsetHeight > this.canvasHeight) {
+                this.menuPosition.top = `${this.canvasHeight - menuObj[0].offsetHeight}px`
+            }
+
+            if (e.offsetX < config.width.serial && e.offsetY > config.height.columns) {
+                this.leftClick = true
+            } else if (e.offsetX > config.width.serial && e.offsetY < config.height.columns) {
+                this.topClick = true
+            } else if (e.offsetX < config.width.serial && e.offsetY < config.height.columns) {
+                this.cornerClick = true
+            }
         },
         handleDoubleClick(e) {
             const x = e.clientX - this.canvasX

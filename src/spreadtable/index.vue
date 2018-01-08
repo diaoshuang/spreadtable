@@ -1,5 +1,5 @@
 <template>
-    <div ref="spreadtable" class="spreadtable" :style="containerStyle" @click="showMenu = false" @paste="doPaste">
+    <div ref="spreadtable" class="spreadtable" :style="containerStyle" @click="hideMenu" @paste="doPaste">
         <div class="toolbar">toobar</div>
         <div class="nav">表格！！！！！
             <button @click="addImg">插入图片</button>
@@ -23,7 +23,6 @@
                     <div :style="horizontalBar.move?'background-color:#a1a1a1;':'background-color:#c1c1c1;'"></div>
                 </div>
             </div>
-
             <div class="vertical-container" style="height:20px" @click="scroll($event,1)">
                 <div class="scroll-bar-vertical" ref="horizontal" @mousedown="dragMove($event,1)" :style="{height:verticalBar.size+'px',top:verticalBar.y+'px'}">
                     <div :style="verticalBar.move?'background-color:#a1a1a1;':'background-color:#c1c1c1;'"></div>
@@ -32,13 +31,18 @@
         </div>
         <div class="sheet">sheet</div>
         <div v-if="showMenu" class="right-menu" :style="{ top:menuPosition.top,left:menuPosition.left }">
-            <ul>
-                <li>自定义菜单</li>
-                <li>自定义菜单</li>
-                <li>自定义菜单</li>
-                <li>自定义菜单</li>
-                <li>自定义菜单</li>
-            </ul>
+            <div class="right-menu" :style="menuPosition">
+                <ul>
+                    <li v-if="cornerClick" @click="setWidthHeight">设置宽度和高度</li>
+                    <li v-if="topClick" @click="setWidth">设置宽度</li>
+                    <li v-if="leftClick" @click="setHeight">设置高度</li>
+                    <li>自定义菜单</li>
+                    <li>自定义菜单</li>
+                    <li>自定义菜单</li>
+                    <li>自定义菜单</li>
+                    <li>自定义菜单</li>
+                </ul>
+            </div>
         </div>
     </div>
 </template>
@@ -83,13 +87,16 @@ export default {
             valueTemp: '',
             showMenu: false,
             menuPosition: {
-                top: 0,
-                left: 0,
+                top: '10000px',
+                left: '10000px',
             },
             autoAddRow: true,
             numberReg: /^((-?[1-9][0-9]*\.[0-9][0-9]*)|(-?[0]\.[0-9][0-9]*)|(-?[1-9][0-9]*)|([0]{1}))$/,
             canvasX: 0,
             canvasY: 0,
+            cornerClick: false,
+            topClick: false,
+            leftClick: false,
         }
     },
     computed: {
@@ -537,6 +544,21 @@ export default {
             })
             requestAnimationFrame(this.painted)
         },
+        hideMenu() {
+            this.menuPosition = {
+                top: '10000px',
+                left: '10000px',
+            }
+        },
+        setWidth() {
+
+        },
+        setHeight() {
+
+        },
+        setWidthHeight() {
+
+        },
     },
 }
 </script>
@@ -569,6 +591,7 @@ export default {
   }
   .right-menu {
     position: fixed;
+    width: 130px;
     border: 1px solid #ccc;
     background-color: #fff;
     box-shadow: 2px 2px 3px #ddd;
