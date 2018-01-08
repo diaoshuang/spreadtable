@@ -74,7 +74,7 @@ export default {
                     }
                     this.verticalBar.y -= k
                     this.offset.y = -this.verticalBar.y / this.verticalBar.k
-                    requestAnimationFrame(this.rePainted)
+                    requestAnimationFrame(this.painted)
                 } else if (e.offsetY > this.verticalBar.y + this.verticalBar.size) {
                     let k = 15
                     if (e.offsetY - this.verticalBar.y - this.verticalBar.size < 15) {

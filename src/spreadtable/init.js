@@ -1,5 +1,4 @@
 import config from './config'
-import utils from './utils'
 
 export default {
     methods: {
@@ -14,7 +13,7 @@ export default {
                 console.log(dataSource)
             } else {
                 let startY = config.height.columns
-                for (let i = 0; i < 200; i += 1) {
+                for (let i = 0; i < 500; i += 1) {
                     const temp = []
                     const cellTemp = []
                     let startX = config.width.serial
@@ -85,12 +84,25 @@ export default {
         },
         initCanvas() {
             const canvas = this.$refs.canvas
+            const canvasPlugin = this.$refs['canvas-plugin']
+            if (typeof canvas.getBoundingClientRect !== 'undefined') {
+                const bounding = canvas.getBoundingClientRect()
+                this.canvasX = bounding.left
+                this.canvasY = bounding.top
+            }
             let ctx = ''
+            let pluginCtx = ''
             if (this.canvas) {
                 ctx = this.canvas
             } else {
                 ctx = canvas.getContext('2d')
                 this.canvas = ctx
+            }
+            if (this.canvasPlugin) {
+                pluginCtx = this.canvasPlugin
+            } else {
+                pluginCtx = canvasPlugin.getContext('2d')
+                this.canvasPlugin = pluginCtx
             }
             const backingStore = ctx.backingStorePixelRatio ||
                 ctx.webkitBackingStorePixelRatio ||
@@ -104,6 +116,9 @@ export default {
             ctx.font = `normal ${12 * this.ratio}px PingFang SC`
             ctx.textBaseline = 'middle'
             ctx.save()
+            pluginCtx.font = `normal ${12 * this.ratio}px PingFang SC`
+            pluginCtx.textBaseline = 'middle'
+            pluginCtx.save()
         },
     },
 }

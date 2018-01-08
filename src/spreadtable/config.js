@@ -10,18 +10,19 @@ export default {
         serial: 30,
         scroll: 20,
         right: 40,
-        cell: 75,
+        cell: 80,
     },
     height: {
         row: 20,
         nav: 60,
-        toolbar: 35,
-        fx: 35,
+        toolbar: 30,
+        fx: 30,
         columns: 25,
         bottom: 40,
+        sheet: 30,
     },
     getHeaderHeight() {
-        const { nav, fx, toolbar } = this.height
-        return nav + fx + toolbar
+        const { nav, fx, toolbar, sheet } = this.height
+        return nav + fx + toolbar + sheet + 20
     },
 }

@@ -11,8 +11,7 @@
   "homepage": "https://github.com/Harveyzhao",
   "dependencies": {
     "babel-eslint": "^8.0.3",
-    "easeljs": "^1.0.2",
-    "two.js": "^0.7.0-alpha.1",
+    "fabric": "^1.7.22",
     "vue": "^2.5.2",
     "vue-router": "^3.0.1"
   },

@@ -21,6 +21,20 @@ export default {
                 this.selectArea.y -= y - this.offset[1]
                 this.selectArea.offset = [...this.offset]
             }
+            if (this.imageObjs.length > 0) {
+                for (const item of this.imageObjs) {
+                    const [x, y] = item.offset
+                    item.x -= x - this.offset[0]
+                    item.y -= y - this.offset[1]
+                    if (item.x < config.width.serial + 1) {
+                        item.x = config.width.serial + 1
+                    }
+                    if (item.y < config.height.columns + 1) {
+                        item.y = config.height.columns + 1
+                    }
+                    item.offset = [...this.offset]
+                }
+            }
             return { displayColumns, displayRows, displayCells }
         },
         getDisplayColumns() {
