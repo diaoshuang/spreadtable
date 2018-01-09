@@ -1,7 +1,12 @@
 <template>
     <div ref="spreadtable" class="spreadtable" :style="containerStyle" @click="hideMenu" @paste="doPaste">
-        <div class="toolbar">toobar</div>
-        <div class="nav">表格！！！！！
+        <div class="navbar">
+            <span v-for="item in navList" class="nav-item" :class="{'cur-nav':item===tool}" @click="changeTool(item)">{{item}}</span>
+        </div>
+        <div class="tool" v-if="tool==='开始'">
+            复制-粘贴
+        </div>
+        <div class="tool" v-else-if="tool==='插入'">
             <button @click="addImg">插入图片</button>
         </div>
         <div class="fx">
@@ -62,6 +67,8 @@ export default {
     mixins: [init, display, paint, events, scroll, operation],
     data() {
         return {
+            navList: ['开始', '插入', '布局', '视图', '数据'],
+            tool: '开始',
             data: [],
             allColumns: [],
             allRows: [],
@@ -170,6 +177,9 @@ export default {
         this.removeEvents()
     },
     methods: {
+        changeTool(item) {
+            this.tool = item
+        },
         init() {
             this.initSize()
             if (this.hasSize) {
@@ -606,11 +616,37 @@ export default {
       }
     }
   }
-  .nav {
-    height: 60px;
+  .navbar {
+    box-sizing:border-box;
+    height: 36px;
+    padding-top:5px;
+    font-size:14px;
+    color:#fff;
+    background:#539671;
+    background: linear-gradient(#539671, #276f47);
+    cursor:default;
+    .nav-item{
+        display:inline-block;
+        line-height:26px;
+        padding:0 15px 5px;
+        margin:0 5px;
+        border-top-left-radius: 3px;
+        border-top-right-radius: 3px;
+        &:hover{
+            background-color:#469469;
+        }
+    }
+    .cur-nav{
+        background-color:#f6f6f6;
+        color:#32624c;
+        &:hover{
+            background-color:#f6f6f6;
+        }
+    }
   }
-  .toolbar {
-    height: 30px;
+  .tool{
+      padding:5px 10px;
+      background-color:#f6f6f6;
   }
   .fx {
     height: 28px;
