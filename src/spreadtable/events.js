@@ -18,6 +18,8 @@ export default {
             hoverRowDivide: null, // 悬浮行
             hoverColumnDivide: null, // 悬浮列
             focusCopy: null,
+
+            mouse: [0, 0],
         }
     },
     created() {
@@ -93,16 +95,20 @@ export default {
             this.save()
             const eX = e.clientX - this.canvasX
             const eY = e.clientY - this.canvasY
-            if (e.region) {
-                this.isImgMoveDown = true
-                this.hoverImage = {
-                    x: eX,
-                    y: eY,
-                    originX: eX,
-                    originY: eY,
-                    img: this.imageObjs.find(item => `${item.id}` === e.region),
+            if (this.imageObjs.length > 0) {
+                for (const item of this.imageObjs) {
+                    if (utils.rayCasting({ x: eX, y: eY }, [{ x: item.x, y: item.y }, { x: item.x, y: item.y + item.height }, { x: item.x + item.width, y: item.y + item.height }, { x: item.x + item.width, y: item.y }])) {
+                        this.isImgMoveDown = true
+                        this.hoverImage = {
+                            x: eX,
+                            y: eY,
+                            originX: eX,
+                            originY: eY,
+                            img: item,
+                        }
+                        return
+                    }
                 }
-                return
             }
             if (e.target.classList.contains('canvas-spreadtable') || e.target.classList.contains('canvas-plugin')) {
                 if (this.hoverRowDivide) {
@@ -199,6 +205,8 @@ export default {
         handleMousemove(e) {
             const eX = e.clientX - this.canvasX
             const eY = e.clientY - this.canvasY
+            this.mouse[0] = eX
+            this.mouse[1] = eY
             this.isHoverFocusCopy = false
             this.isHoverColumn = false
             this.isHoverRow = false
@@ -209,6 +217,19 @@ export default {
             if (!this.isHoverColumnDivideDown) {
                 this.hoverColumnDivide = null
             }
+
+            let hoverImage = false
+            if (this.imageObjs.length > 0) {
+                this.imageObjs.forEach((item) => { item.hover = false })
+                for (const item of this.imageObjs) {
+                    if (utils.rayCasting({ x: eX, y: eY }, [{ x: item.x, y: item.y }, { x: item.x, y: item.y + item.height }, { x: item.x + item.width, y: item.y + item.height }, { x: item.x + item.width, y: item.y }])) {
+                        this.setCursor('move')
+                        item.hover = true
+                        hoverImage = true
+                    }
+                }
+            }
+
             if (this.isDown) {
                 this.doSelectArea(eX, eY)
             } else if (this.isHoverRowDivideDown) {
@@ -291,14 +312,7 @@ export default {
                 this.hoverImage.img.x += e.movementX
                 this.hoverImage.img.y += e.movementY
                 requestAnimationFrame(this.paintedImage)
-            } else if (this.imageObjs.length > 0 && e.region) {
-                this.imageObjs.forEach((item) => { item.hover = false })
-                const image = this.imageObjs.find(item => `${item.id}` === e.region)
-                if (image) {
-                    image.hover = true
-                }
-                this.setCursor('move')
-            } else if (e.target.classList.contains('canvas-spreadtable') || e.target.classList.contains('canvas-plugin')) {
+            } else if (!hoverImage && e.target.classList.contains('canvas-plugin')) {
                 if (utils.isInRegion([eX, eY], [config.width.serial, config.height.columns], [this.canvasWidth, this.canvasHeight])) {
                     this.isHoverGrid = true
                     this.setCursor('cell')

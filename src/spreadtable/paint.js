@@ -11,17 +11,44 @@ export default {
         mapSize = mapSize.bind(this)
     },
     methods: {
+        beforePainted() {
+            if (this.selectArea) {
+                const [x, y] = this.selectArea.offset
+                this.selectArea.x -= x - this.offset[0]
+                this.selectArea.y -= y - this.offset[1]
+                this.selectArea.offset = [...this.offset]
+            }
+            if (this.imageObjs.length > 0) {
+                for (const item of this.imageObjs) {
+                    const [x, y] = item.offset
+                    item.x -= x - this.offset[0]
+                    item.y -= y - this.offset[1]
+                    if (item.x < config.width.serial + 1) {
+                        item.x = config.width.serial + 1
+                    }
+                    if (item.y < config.height.columns + 1) {
+                        item.y = config.height.columns + 1
+                    }
+                    item.offset = [...this.offset]
+                }
+            }
+        },
         painted() {
             const time = Date.now()
             // const items = this.getDisplayItems()
+            this.beforePainted()
             this.clearPainted()
             this.doDraw()
-            console.log(Date.now() - time)
+            if (Date.now() - time >= 5) {
+                console.warn(`渲染耗时：${Date.now() - time}ms`)
+            } else {
+                console.log(`渲染耗时：${Date.now() - time}ms`)
+            }
         },
         paintedImage() {
             const { canvasPlugin, canvasWidth, canvasHeight, imageObjs } = this
             canvasPlugin.clearRect(
-                ...mapPoint(config.width.serial + 1, config.height.columns),
+                ...mapPoint(config.width.serial + 1, config.height.columns + 1),
                 ...mapSize(canvasWidth - config.width.serial - 1, canvasHeight - config.height.columns - 1),
             )
             if (imageObjs.length > 0) {
@@ -121,6 +148,7 @@ export default {
             }
 
             const { focusRow, focusColumn } = this.getFocusRowAndColumn(focusCellItem, selectArea)
+
             this.paintBorder(pluginCtx, focusRow, focusColumn, focusCellItem, displayColumns, displayRows)
         },
         paintBorder(ctx, focusRow, focusColumn, focusCellItem, displayColumns, displayRows) {
@@ -383,14 +411,14 @@ export default {
             }
             ctx.strokeStyle = '#cecece'
             ctx.moveTo(...mapPoint(item.x - 1, item.y - 1))
-            ctx.lineTo(...mapPoint(item.x + (item.width / 2) + 1, item.y - 1))
-            ctx.lineTo(...mapPoint(item.x + (item.width / 2) + 1, item.y + (item.height / 2) + 1))
-            ctx.lineTo(...mapPoint(item.x - 1, item.y + (item.height / 2) + 1))
+            ctx.lineTo(...mapPoint(item.x + (item.width / this.ratio) + 1, item.y - 1))
+            ctx.lineTo(...mapPoint(item.x + (item.width / this.ratio) + 1, item.y + (item.height / this.ratio) + 1))
+            ctx.lineTo(...mapPoint(item.x - 1, item.y + (item.height / this.ratio) + 1))
             ctx.closePath()
             ctx.fill()
             ctx.stroke()
             ctx.drawImage(item.img, ...mapPoint(item.x, item.y))
-            ctx.addHitRegion({ id: item.id })
+            // ctx.addHitRegion({ id: item.id })
         },
     },
 }
