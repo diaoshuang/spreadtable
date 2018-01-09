@@ -540,6 +540,8 @@ export default {
             this.isPaste = true
         },
         addImg() {
+            this.imageObjs.sort((a, b) => b.sort - a.sort)
+
             this.imageObjs.push({
                 id: Date.now(),
                 url: 'http://www.baidu.com/img/bd_logo1.png',
@@ -547,7 +549,14 @@ export default {
                 y: 100,
                 offset: [...this.offset],
                 hover: false,
+                sort: this.imageObjs.length > 0 ? this.imageObjs[this.imageObjs.length - 1].sort + 1 : 0,
             })
+            this.imageObjs.sort((a, b) => b.sort - a.sort)
+            let index = this.imageObjs.length - 1
+            for (const item of this.imageObjs) {
+                item.sort = index
+                index -= 1
+            }
             requestAnimationFrame(this.painted)
         },
         hideMenu() {
