@@ -122,6 +122,17 @@ const utils = {
         // 射线穿过多边形边界的次数为奇数时点在多边形内
         return flag
     },
+    rotatePoint(Source, Angle) {
+        let A = 0
+        let R = 0
+        A = Math.atan2(Source[1], Source[0])
+        A += (-Math.PI / (360 / Angle))// 旋转
+        R = Math.sqrt((Source[0] * Source[0]) + (Source[1] * Source[1]))// 半径
+        return [
+            Math.cos(A) * R,
+            Math.sin(A) * R,
+        ]
+    },
 }
 
 export default utils

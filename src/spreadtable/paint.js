@@ -34,16 +34,16 @@ export default {
             }
         },
         painted() {
-            const time = Date.now()
+            // const time = Date.now()
             // const items = this.getDisplayItems()
             this.beforePainted()
             this.clearPainted()
             this.doDraw()
-            if (Date.now() - time >= 5) {
-                console.warn(`渲染耗时：${Date.now() - time}ms`)
-            } else {
-                console.log(`渲染耗时：${Date.now() - time}ms`)
-            }
+            // if (Date.now() - time >= 5) {
+            //     console.warn(`渲染耗时：${Date.now() - time}ms`)
+            // } else {
+            //     console.log(`渲染耗时：${Date.now() - time}ms`)
+            // }
         },
         paintedImage() {
             const { canvasPlugin, canvasWidth, canvasHeight, imageObjs } = this
@@ -175,10 +175,10 @@ export default {
                 if (width === 0) {
                     ctx.stroke()
                     ctx.beginPath()
-                    ctx.lineWidth = 3 * ratio
+                    ctx.lineWidth = 2 * ratio
                     ctx.strokeStyle = '#237245'
-                    ctx.moveTo(...mapPoint(x, 0, FIX))
-                    ctx.lineTo(...mapPoint(x, config.height.columns, FIX))
+                    ctx.moveTo(...mapPoint(x, 0))
+                    ctx.lineTo(...mapPoint(x, config.height.columns))
                     ctx.stroke()
                     ctx.beginPath()
                     ctx.strokeStyle = '#cecece'
@@ -195,9 +195,26 @@ export default {
             }
             // row 横线
             for (const { realY: y, row, height } of displayRows) {
-                ctx.moveTo(...mapPoint(0, y + height, FIX))
-                ctx.lineTo(...mapPoint(config.width.serial, y + height))
-                this.paintText(ctx, ...mapPoint(utils.half(config.width.serial), y + 11), [row + 1])
+                if (height === 0) {
+                    ctx.stroke()
+                    ctx.beginPath()
+                    ctx.lineWidth = 2 * ratio
+                    ctx.strokeStyle = '#237245'
+                    ctx.moveTo(...mapPoint(0, y))
+                    ctx.lineTo(...mapPoint(config.width.serial, y))
+                    ctx.stroke()
+                    ctx.beginPath()
+                    ctx.strokeStyle = '#cecece'
+                    ctx.lineWidth = 1 * ratio
+                } else {
+                    ctx.moveTo(...mapPoint(0, y + height, FIX))
+                    ctx.lineTo(...mapPoint(config.width.serial, y + height))
+                    if (height > 10) {
+                        this.paintText(ctx, ...mapPoint(utils.half(config.width.serial), y + 11), [row + 1])
+                    } else if (height > 0) {
+                        this.paintText(ctx, ...mapPoint(utils.half(config.width.serial), y + 11), ['.'])
+                    }
+                }
             }
             ctx.stroke()
 
@@ -402,23 +419,53 @@ export default {
             }
         },
         paintImageItem(ctx, item) {
-            ctx.beginPath()
             if (item.x < config.width.serial + 2) {
                 item.x = config.width.serial + 2
             }
             if (item.y < config.height.columns + 2) {
                 item.y = config.height.columns + 2
             }
-            ctx.strokeStyle = '#cecece'
-            ctx.moveTo(...mapPoint(item.x - 1, item.y - 1))
-            ctx.lineTo(...mapPoint(item.x + (item.width / this.ratio) + 1, item.y - 1))
-            ctx.lineTo(...mapPoint(item.x + (item.width / this.ratio) + 1, item.y + (item.height / this.ratio) + 1))
-            ctx.lineTo(...mapPoint(item.x - 1, item.y + (item.height / this.ratio) + 1))
+            item.point = []
+            item.point[0] = [item.x - 1, item.y - 1]
+            item.point[1] = [item.x + (item.width) + 1, item.y - 1]
+            item.point[2] = [item.x + (item.width) + 1, item.y + (item.height) + 1]
+            item.point[3] = [item.x - 1, item.y + (item.height) + 1]
+
+            ctx.drawImage(item.img, ...mapPoint(item.x, item.y), item.width * this.ratio, item.height * this.ratio)
+            if (this.imgFocus && !this.isImgMoveDown) {
+                this.paintImageBorder(ctx, item.point, item)
+            }
+        },
+        paintImageBorder(ctx, point) {
+            ctx.beginPath()
+            ctx.strokeStyle = '#666'
+            ctx.moveTo(...mapPoint(...point[0], FIX))
+            ctx.lineTo(...mapPoint(...point[1], FIX))
+            ctx.lineTo(...mapPoint(...point[2], FIX))
+            ctx.lineTo(...mapPoint(...point[3], FIX))
             ctx.closePath()
-            ctx.fill()
             ctx.stroke()
-            ctx.drawImage(item.img, ...mapPoint(item.x, item.y))
-            // ctx.addHitRegion({ id: item.id })
+
+            ctx.beginPath()
+            ctx.fillStyle = '#666'
+            ctx.fillRect(...mapPoint(point[0][0] - 5, point[0][1] - 5), ...mapSize(10, 10))
+            ctx.fillRect(...mapPoint(point[1][0] - 5, point[1][1] - 5), ...mapSize(10, 10))
+            ctx.fillRect(...mapPoint(point[2][0] - 5, point[2][1] - 5), ...mapSize(10, 10))
+            ctx.fillRect(...mapPoint(point[3][0] - 5, point[3][1] - 5), ...mapSize(10, 10))
+            ctx.fillRect(...mapPoint((((point[1][0] - point[0][0]) / 2) + point[0][0]) - 5, point[0][1] - 5), ...mapSize(10, 10))
+            ctx.fillRect(...mapPoint((((point[1][0] - point[0][0]) / 2) + point[0][0]) - 5, point[2][1] - 5), ...mapSize(10, 10))
+            ctx.fillRect(...mapPoint(point[0][0] - 5, (((point[3][1] - point[0][1]) / 2) + point[0][1]) - 5), ...mapSize(10, 10))
+            ctx.fillRect(...mapPoint(point[1][0] - 5, (((point[3][1] - point[0][1]) / 2) + point[0][1]) - 5), ...mapSize(10, 10))
+            ctx.fillStyle = '#fff'
+            ctx.fillRect(...mapPoint(point[0][0] - 4, point[0][1] - 4), ...mapSize(8, 8))
+            ctx.fillRect(...mapPoint(point[1][0] - 4, point[1][1] - 4), ...mapSize(8, 8))
+            ctx.fillRect(...mapPoint(point[2][0] - 4, point[2][1] - 4), ...mapSize(8, 8))
+            ctx.fillRect(...mapPoint(point[3][0] - 4, point[3][1] - 4), ...mapSize(8, 8))
+            ctx.fillRect(...mapPoint((((point[1][0] - point[0][0]) / 2) + point[0][0]) - 4, point[0][1] - 4), ...mapSize(8, 8))
+            ctx.fillRect(...mapPoint((((point[1][0] - point[0][0]) / 2) + point[0][0]) - 4, point[2][1] - 4), ...mapSize(8, 8))
+            ctx.fillRect(...mapPoint(point[0][0] - 4, (((point[3][1] - point[0][1]) / 2) + point[0][1]) - 4), ...mapSize(8, 8))
+            ctx.fillRect(...mapPoint(point[1][0] - 4, (((point[3][1] - point[0][1]) / 2) + point[0][1]) - 4), ...mapSize(8, 8))
+            ctx.stroke()
         },
     },
 }
