@@ -61,12 +61,12 @@
             </div>
         </div>
         <div class="sheet">sheet</div>
-        <div v-if="showMenu" class="right-menu" :style="{ top:menuPosition.top,left:menuPosition.left }">
+        <div v-show="showMenu" class="right-menu" :style="{ top:menuPosition.top,left:menuPosition.left }">
             <div class="right-menu" :style="menuPosition">
                 <ul>
                     <li v-if="cornerClick" @click="setWidthHeight">设置宽度和高度</li>
-                    <li v-if="topClick" @click="setWidth">设置宽度</li>
-                    <li v-if="leftClick" @click="setHeight">设置高度</li>
+                    <li v-if="topClick" @click="cellWidthDialog=true">列宽</li>
+                    <li v-if="leftClick" @click="rowHeightDialog=true">行高</li>
                     <li>自定义菜单</li>
                     <li>自定义菜单</li>
                     <li>自定义菜单</li>
@@ -75,6 +75,24 @@
                 </ul>
             </div>
         </div>
+        <modal v-if="rowHeightDialog" @close="rowHeightDialog = false" @submit="setHeight">
+            <div slot="header">
+                行高
+            </div>
+            <div slot="body">
+                <label class="input-label">行高</label>
+                <input ref="setHeightInput" type="text" v-model="setRowheight">
+            </div>
+        </modal>
+         <modal v-if="cellWidthDialog" @close="cellWidthDialog = false" @submit="setWidth">
+            <div slot="header">
+                列宽
+            </div>
+            <div slot="body">
+                <label class="input-label">列宽</label>
+                <input ref="setWidthInput" type="text" v-model="setCellWidth">
+            </div>
+        </modal>
     </div>
 </template>
 
@@ -87,10 +105,12 @@ import events from './events'
 import scroll from './scroll'
 import operation from './operation'
 import utils from './utils'
+import Modal from './Modal'
 
 export default {
     props: ['dataSource', 'dataColumns', 'options'],
     mixins: [init, display, paint, events, scroll, operation],
+    components: { Modal },
     data() {
         return {
             navList: ['开始', '插入', '布局', '视图', '数据'],
@@ -127,9 +147,17 @@ export default {
             numberReg: /^((-?[1-9][0-9]*\.[0-9][0-9]*)|(-?[0]\.[0-9][0-9]*)|(-?[1-9][0-9]*)|([0]{1}))$/,
             canvasX: 0,
             canvasY: 0,
+
+            // 右键
             cornerClick: false,
             topClick: false,
             leftClick: false,
+            rowHeightDialog: false,
+            cellWidthDialog: false,
+            contextRow: null,
+            contextCell: null,
+            setRowheight: 0,
+            setCellWidth: 0,
         }
     },
     computed: {
@@ -184,6 +212,20 @@ export default {
                 }
                 copyText += '</table>'
                 this.$refs.inputSelect.innerHTML = copyText
+            }
+        },
+        rowHeightDialog(value) {
+            if (value) {
+                 this.$nextTick(function () { //eslint-disable-line
+                     this.$refs.setHeightInput.select()
+                 })
+            }
+        },
+        cellWidthDialog(value) {
+            if (value) {
+                 this.$nextTick(function () { //eslint-disable-line
+                     this.$refs.setWidthInput.select()
+                 })
             }
         },
     },
@@ -253,7 +295,11 @@ export default {
         },
         isInRowDivide(y) {
             for (const row of this.display.rows) {
-                if (y > (row.realY + row.height) - 3 && y < (row.realY + row.height) + 3) {
+                if (row.height <= 2) {
+                    if (y > (row.realY + 5) - 2 && y < (row.realY + 5) + 2) {
+                        return row
+                    }
+                } else if (y > (row.realY + row.height) - 3 && y < (row.realY + row.height) + 3) {
                     return row
                 }
             }
@@ -592,13 +638,32 @@ export default {
             }
         },
         setWidth() {
-
+            const differenceValue = this.setCellWidth - this.contextCell.width
+            this.allColumns[this.contextCell.cell].width += differenceValue
+            for (let i = this.contextCell.cell + 1; i < this.allColumns.length; i += 1) {
+                this.allColumns[i].x += differenceValue
+            }
+            if (this.selectArea) {
+                this.selectArea = null
+            }
+            this.bodyWidth += differenceValue
+            requestAnimationFrame(this.painted)
+            this.cellWidthDialog = false
         },
         setHeight() {
-
+            const differenceValue = this.setRowheight - this.contextRow.height
+            this.allRows[this.contextRow.row].height += differenceValue
+            for (let i = this.contextRow.row + 1; i < this.allRows.length; i += 1) {
+                this.allRows[i].y += differenceValue
+            }
+            if (this.selectArea) {
+                this.selectArea = null
+            }
+            this.bodyHeight += differenceValue
+            requestAnimationFrame(this.painted)
+            this.rowHeightDialog = false
         },
         setWidthHeight() {
-
         },
     },
 }
@@ -652,7 +717,7 @@ export default {
     }
   }
   .navbar {
-    box-sizing:border-box;
+    box-sizing: border-box;
     height: 36px;
     padding-top:5px;
     background:#539671;
@@ -672,12 +737,12 @@ export default {
             background-color:#469469;
         }
     }
-    .cur-nav{
-        background-color:#f6f6f6;
-        color:#32624c;
-        &:hover{
-            background-color:#f6f6f6;
-        }
+    .cur-nav {
+      background-color: #f6f6f6;
+      color: #32624c;
+      &:hover {
+        background-color: #f6f6f6;
+      }
     }
   }
   .tool{
@@ -736,11 +801,6 @@ export default {
               font-size:14px;
           }
       }
-      .font-family-select{
-          width:100px;
-          height: 20px;
-      }
-      .font-size-select{}
   }
   .fx {
     height: 28px;
@@ -773,5 +833,9 @@ export default {
     bottom: 0;
     width: 100%;
   }
+}
+.input-label {
+    font-size: 13px;
+    margin-right: 20px;
 }
 </style>

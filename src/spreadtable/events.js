@@ -11,8 +11,13 @@ export default {
             isHoverRow: false, // 是否处于行
             isHoverColumn: false, // 是否处于列头
             isHoverFocusCopy: false, // 是否处于右下角小点
+            isColumnDraggingDown: false,
             isFocusCopyDown: false, // 右下角小点是否点击
+            isImgMoveDown: false,
             isFxEditing: false, // 是否处于公式编辑
+
+            rowSelect: false,
+            columnSelect: false,
 
             hoverImage: null,
             hoverRowDivide: null, // 悬浮行
@@ -20,6 +25,7 @@ export default {
             focusCopy: null,
 
             mouse: [0, 0],
+            imgFocus: false,
         }
     },
     created() {
@@ -95,9 +101,10 @@ export default {
             this.save()
             const eX = e.clientX - this.canvasX
             const eY = e.clientY - this.canvasY
+            this.imgFocus = false
             if (this.imageObjs.length > 0) {
                 for (const item of this.imageObjs) {
-                    if (utils.rayCasting({ x: eX, y: eY }, [{ x: item.x, y: item.y }, { x: item.x, y: item.y + item.height }, { x: item.x + item.width, y: item.y + item.height }, { x: item.x + item.width, y: item.y }])) {
+                    if (utils.isInRegion([eX, eY], [item.point[0][0] - 5, item.point[0][1] - 5], [item.point[2][0] + 5, item.point[2][1] + 5])) {
                         this.isImgMoveDown = true
                         this.hoverImage = {
                             x: eX,
@@ -106,6 +113,7 @@ export default {
                             originY: eY,
                             img: item,
                         }
+                        this.imgFocus = true
                         return
                     }
                 }
@@ -145,6 +153,7 @@ export default {
                 } else if (utils.isInRegion([eX, eY], [0, config.height.columns], [config.width.serial, this.canvasHeight])) {
                     const row = this.getRowAt(eY)
                     if (row) {
+                        this.rowSelect = { ...row }
                         this.focusCell = [row.row, 0]
                         this.offset[0] = 0
                         this.selectArea = { type: 0, x: config.width.serial, y: row.realY, width: Infinity, height: row.height, cell: 0, row: row.row, offset: [...this.offset] }
@@ -154,15 +163,20 @@ export default {
                         this.$emit('focus', this.allRows[row.row].rowData)
                     }
                 } else if (utils.isInRegion([eX, eY], [config.width.serial, 0], [this.canvasWidth, config.height.columns])) {
-                    const column = this.getColumnAt(eX)
-                    if (column) {
-                        this.focusCell = [0, column.cell]
-                        this.offset[1] = 0
-                        this.selectArea = { type: 0, x: column.realX, y: config.height.columns, width: column.width, height: Infinity, cell: column.cell, row: 0, offset: [...this.offset] }
-                        this.selectArea.rowCount = Infinity
-                        this.selectArea.cellCount = 1
-                        requestAnimationFrame(this.painted)
-                        this.$emit('focus', this.allRows[0].rowData)
+                    if (this.selectArea && this.selectArea.rowCount === Infinity && eX > this.selectArea.x && eX < this.selectArea.x + this.selectArea.width) {
+                        this.isColumnDraggingDown = true
+                    } else {
+                        const column = this.getColumnAt(eX)
+                        if (column) {
+                            this.columnSelect = { ...column }
+                            this.focusCell = [0, column.cell]
+                            this.offset[1] = 0
+                            this.selectArea = { type: 0, x: column.realX, y: config.height.columns, width: column.width, height: Infinity, cell: column.cell, row: 0, offset: [...this.offset] }
+                            this.selectArea.rowCount = Infinity
+                            this.selectArea.cellCount = 1
+                            requestAnimationFrame(this.painted)
+                            this.$emit('focus', this.allRows[0].rowData)
+                        }
                     }
                 }
             }
@@ -211,6 +225,7 @@ export default {
             this.isHoverColumn = false
             this.isHoverRow = false
             this.isHoverGrid = false
+            this.isColumnDraggingDown = false
             if (!this.isHoverRowDivideDown) {
                 this.hoverRowDivide = null
             }
@@ -222,7 +237,8 @@ export default {
             if (this.imageObjs.length > 0) {
                 this.imageObjs.forEach((item) => { item.hover = false })
                 for (const item of this.imageObjs) {
-                    if (utils.rayCasting({ x: eX, y: eY }, [{ x: item.x, y: item.y }, { x: item.x, y: item.y + item.height }, { x: item.x + item.width, y: item.y + item.height }, { x: item.x + item.width, y: item.y }])) {
+                    // if (utils.rayCasting({ x: eX, y: eY }, [{ x: item.x, y: item.y }, { x: item.x, y: item.y + item.height }, { x: item.x + item.width, y: item.y + item.height }, { x: item.x + item.width, y: item.y }])) {
+                    if (item.point && utils.isInRegion([eX, eY], [item.point[0][0] - 5, item.point[0][1] - 5], [item.point[2][0] + 5, item.point[2][1] + 5])) {
                         this.setCursor('move')
                         item.hover = true
                         hoverImage = true
@@ -246,6 +262,42 @@ export default {
                     this.hoverColumnDivide.x = this.hoverColumnDivide.minX
                 }
                 requestAnimationFrame(this.painted)
+            } else if (this.isColumnDraggingDown) {
+
+            } else if (this.rowSelect) {
+                const row = this.getRowAt(eY)
+                if (row) {
+                    if (this.rowSelect.row <= row.row) {
+                        this.selectArea.type = 0
+                        this.selectArea.y = this.rowSelect.realY
+                        this.selectArea.height = (row.realY - this.rowSelect.realY) + row.height
+                        this.selectArea.row = this.rowSelect.row
+                    } else {
+                        this.selectArea.type = 1
+                        this.selectArea.y = row.realY
+                        this.selectArea.height = (this.rowSelect.realY - row.realY) + this.rowSelect.height
+                        this.selectArea.row = row.row
+                    }
+                    this.selectArea.rowCount = Math.abs(this.rowSelect.row - row.row)
+                    requestAnimationFrame(this.painted)
+                    this.$emit('focus', this.allRows[row.row].rowData)
+                }
+            } else if (this.columnSelect) {
+                const column = this.getColumnAt(eX)
+                if (column) {
+                    if (this.columnSelect.cell <= column.cell) {
+                        this.selectArea.x = this.columnSelect.realX
+                        this.selectArea.width = (column.realX - this.columnSelect.realX) + column.width
+                        this.selectArea.cell = this.columnSelect.cell
+                    } else {
+                        this.selectArea.x = column.realX
+                        this.selectArea.width = (this.columnSelect.realX - column.realX) + this.columnSelect.width
+                        this.selectArea.cell = column.cell
+                    }
+                    this.selectArea.cellCount = Math.abs(this.columnSelect.cell - column.cell)
+                    requestAnimationFrame(this.painted)
+                    this.$emit('focus', this.allRows[0].rowData)
+                }
             } else if (this.isFocusCopyDown) {
                 const focusCellItem = this.getFocusCell(this.focusCell)
                 if (this.selectArea) {
@@ -338,7 +390,7 @@ export default {
                         if (row) {
                             this.setCursor('row-resize')
                             if (!this.hoverRowDivide) {
-                                this.hoverRowDivide = { y: row.realY + row.height, row, minY: row.realY + config.height.row }
+                                this.hoverRowDivide = { y: row.realY + row.height, row, minY: row.realY }
                             }
                         } else if (this.hoverRowDivide) {
                             this.hoverRowDivide = null
@@ -356,8 +408,15 @@ export default {
                             if (!this.hoverColumnDivide) {
                                 this.hoverColumnDivide = { x: column.realX + column.width, column, minX: column.realX }
                             }
-                        } else if (this.hoverColumnDivide) {
-                            this.hoverColumnDivide = null
+                        } else {
+                            if (this.hoverColumnDivide) {
+                                this.hoverColumnDivide = null
+                            }
+                            if (this.selectArea && this.selectArea.rowCount === Infinity) {
+                                if (eX > this.selectArea.x && eX < this.selectArea.x + this.selectArea.width) {
+                                    this.setCursor('-webkit-grab')
+                                }
+                            }
                         }
                     } else {
                         this.hoverColumnDivide = null
@@ -372,7 +431,12 @@ export default {
             const eY = e.clientY - this.canvasY
             this.isDown = false
             this.isFocusCopyDown = false
-            this.isImgMoveDown = false
+            this.rowSelect = null
+            this.columnSelect = null
+            if (this.isImgMoveDown) {
+                this.isImgMoveDown = false
+                requestAnimationFrame(this.painted)
+            }
             this.horizontalBar.move = false
             this.verticalBar.move = false
             if (this.isHoverRowDivideDown) {
@@ -393,7 +457,7 @@ export default {
                 if (eX > 0 && eX < config.width.serial) {
                     const row = this.isInRowDivide(eY)
                     if (row) {
-                        this.hoverRowDivide = { y: row.realY + row.height, row, minY: row.realY + config.height.row }
+                        this.hoverRowDivide = { y: row.realY + row.height, row, minY: row.realY }
                     }
                 }
             } else if (this.isHoverColumnDivideDown) {
@@ -456,32 +520,40 @@ export default {
         },
         handleContextMenu(e) {
             e.preventDefault()
+            const eX = e.clientX - this.canvasX
+            const eY = e.clientY - this.canvasY
             const menuObj = document.getElementsByClassName('right-menu')
-            const canvas = document.getElementsByClassName('spreadtable-main')
-            const objX = document.documentElement.clientWidth
-            const objY = document.documentElement.clientHeight
-            console.log(e.offsetX, e.offsetY, menuObj, objX, objY, canvas)
-            this.showMenu = true
             this.topClick = false
             this.leftClick = false
             this.menuPosition = {
                 left: `${e.clientX}px`,
                 top: `${e.clientY}px`,
             }
-            if (e.offsetX + menuObj[0].offsetWidth > this.canvasWidth) {
+            if (eX + menuObj[0].offsetWidth > this.canvasWidth) {
                 this.menuPosition.left = `${this.canvasWidth - menuObj[0].offsetWidth}px`
             }
-            if (e.offsetY + menuObj[0].offsetHeight > this.canvasHeight) {
+            if (eY + menuObj[0].offsetHeight > this.canvasHeight) {
                 this.menuPosition.top = `${this.canvasHeight - menuObj[0].offsetHeight}px`
             }
 
-            if (e.offsetX < config.width.serial && e.offsetY > config.height.columns) {
-                this.leftClick = true
-            } else if (e.offsetX > config.width.serial && e.offsetY < config.height.columns) {
-                this.topClick = true
-            } else if (e.offsetX < config.width.serial && e.offsetY < config.height.columns) {
+            if (eX < config.width.serial && eY > config.height.columns) {
+                const row = this.getRowAt(eY)
+                if (row) {
+                    this.setRowheight = row.height
+                    this.contextRow = { ...row }
+                    this.leftClick = true
+                }
+            } else if (eX > config.width.serial && eY < config.height.columns) {
+                const column = this.getColumnAt(eX)
+                if (column) {
+                    this.setCellWidth = column.width
+                    this.contextCell = { ...column }
+                    this.topClick = true
+                }
+            } else if (eX < config.width.serial && eY < config.height.columns) {
                 this.cornerClick = true
             }
+            this.showMenu = true
         },
         handleDoubleClick(e) {
             const eX = e.clientX - this.canvasX
