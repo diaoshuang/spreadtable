@@ -12,6 +12,7 @@ export default {
             isHoverColumn: false, // 是否处于列头
             isHoverFocusCopy: false, // 是否处于右下角小点
             isColumnDraggingDown: false,
+            isRowDraggingDown: false,
             isFocusCopyDown: false, // 右下角小点是否点击
             isImgMoveDown: false,
             isFxEditing: false, // 是否处于公式编辑
@@ -24,8 +25,49 @@ export default {
             hoverColumnDivide: null, // 悬浮列
             focusCopy: null,
 
-            mouse: [0, 0],
             imgFocus: false,
+            mouse: {
+                image: {
+                    down: false,
+                    hover: false,
+                    obj: null,
+                },
+                table: {
+                    down: false,
+                    hover: false,
+                },
+                focus: {
+                    down: false,
+                    hover: false,
+                },
+                row: {
+                    down: false,
+                    hover: false,
+                },
+                cell: {
+                    down: false,
+                    hover: false,
+                },
+                rowDivide: {
+                    down: false,
+                    hover: false,
+                },
+                cellDivide: {
+                    down: false,
+                    hover: false,
+                },
+                rowMove: {
+                    down: false,
+                    hover: false,
+                },
+                cellMove: {
+                    down: false,
+                    hover: false,
+                },
+                all: {
+                    hover: false,
+                },
+            },
         }
     },
     created() {
@@ -101,131 +143,161 @@ export default {
             this.save()
             const eX = e.clientX - this.canvasX
             const eY = e.clientY - this.canvasY
-            this.imgFocus = false
-            if (this.imageObjs.length > 0) {
+            const { image, rowDivide, cellDivide, table, focus, rowMove, cellMove, row, cell, all } = this.mouse
+            if (image.hover) {
+                image.down = true
                 for (const item of this.imageObjs) {
-                    if (utils.isInRegion([eX, eY], [item.point[0][0] - 5, item.point[0][1] - 5], [item.point[2][0] + 5, item.point[2][1] + 5])) {
-                        this.isImgMoveDown = true
-                        this.hoverImage = {
+                    if (item.point && utils.isInRegion([eX, eY], [item.point[0][0], item.point[0][1]], [item.point[2][0], item.point[2][1]])) {
+                        image.obj = {
                             x: eX,
                             y: eY,
                             originX: eX,
                             originY: eY,
                             img: item,
                         }
-                        this.imgFocus = true
+                        item.focus = true
+                        requestAnimationFrame(this.paintedImage)
                         return
                     }
                 }
-            }
-            if (e.target.classList.contains('canvas-spreadtable') || e.target.classList.contains('canvas-plugin')) {
-                if (this.hoverRowDivide) {
-                    this.isHoverRowDivideDown = true
-                    requestAnimationFrame(this.painted)
-                } else if (this.hoverColumnDivide) {
-                    this.isHoverColumnDivideDown = true
-                    requestAnimationFrame(this.painted)
-                } else if (utils.isInRegion([eX, eY], [config.width.serial, config.height.columns], [this.canvasWidth, this.canvasHeight])) {
-                    if (this.isHoverFocusCopy) {
-                        this.isFocusCopyDown = true
-                    } else {
-                        this.isDown = true
-                        if (e.shiftKey) {
-                            this.doSelectArea(eX, eY)
-                        } else {
-                            const cell = this.getCellAt(eX, eY)
-                            if (cell) {
-                                this.focusCell = [cell.row, cell.cell]
-                                this.selectArea = null
-                                requestAnimationFrame(this.painted)
-                                this.$emit('focus', cell.rowData)
-                            }
-                        }
-                    }
-                } else if (utils.isInRegion([eX, eY], [0, 0], [config.width.serial - 2, config.height.columns - 2])) {
-                    this.focusCell = [0, 0]
-                    this.offset = [0, 0]
-                    this.selectArea = { type: 0, x: config.width.serial, y: config.height.columns, width: Infinity, height: Infinity, cell: 0, row: 0, offset: [...this.offset] }
-                    this.selectArea.rowCount = Infinity
-                    this.selectArea.cellCount = Infinity
-                    requestAnimationFrame(this.painted)
-                    this.$emit('focus', this.allRows[0].rowData)
-                } else if (utils.isInRegion([eX, eY], [0, config.height.columns], [config.width.serial, this.canvasHeight])) {
-                    const row = this.getRowAt(eY)
-                    if (row) {
-                        this.rowSelect = { ...row }
-                        this.focusCell = [row.row, 0]
-                        this.offset[0] = 0
-                        this.selectArea = { type: 0, x: config.width.serial, y: row.realY, width: Infinity, height: row.height, cell: 0, row: row.row, offset: [...this.offset] }
-                        this.selectArea.rowCount = 1
-                        this.selectArea.cellCount = Infinity
+            } else if (rowDivide.hover) {
+                rowDivide.down = true
+            } else if (cellDivide.hover) {
+                cellDivide.down = true
+            } else if (focus.hover) {
+                focus.down = true
+            } else if (table.hover) {
+                table.down = true
+                if (e.shiftKey) {
+                    this.doSelectArea(eX, eY)
+                } else {
+                    const cellItem = this.getCellAt(eX, eY)
+                    if (cellItem) {
+                        this.focusCell = [cellItem.row, cellItem.cell]
+                        this.selectArea = null
                         requestAnimationFrame(this.painted)
-                        this.$emit('focus', this.allRows[row.row].rowData)
+                        this.$emit('focus', cellItem.rowData)
                     }
-                } else if (utils.isInRegion([eX, eY], [config.width.serial, 0], [this.canvasWidth, config.height.columns])) {
-                    if (this.selectArea && this.selectArea.rowCount === Infinity && eX > this.selectArea.x && eX < this.selectArea.x + this.selectArea.width) {
-                        this.isColumnDraggingDown = true
-                    } else {
-                        const column = this.getColumnAt(eX)
-                        if (column) {
-                            this.columnSelect = { ...column }
-                            this.focusCell = [0, column.cell]
-                            this.offset[1] = 0
-                            this.selectArea = { type: 0, x: column.realX, y: config.height.columns, width: column.width, height: Infinity, cell: column.cell, row: 0, offset: [...this.offset] }
-                            this.selectArea.rowCount = Infinity
-                            this.selectArea.cellCount = 1
-                            requestAnimationFrame(this.painted)
-                            this.$emit('focus', this.allRows[0].rowData)
-                        }
-                    }
+                }
+            } else if (rowMove.hover) {
+                rowMove.down = true
+            } else if (cellMove.hover) {
+                cellMove.down = true
+            } else if (row.hover) {
+                row.down = true
+                const rowItem = this.getRowAt(eY)
+                if (rowItem) {
+                    row.obj = { ...rowItem }
+                    this.focusCell = [rowItem.row, 0]
+                    this.offset[0] = 0
+                    this.selectArea = { type: 0, x: config.width.serial, y: rowItem.realY, width: Infinity, height: rowItem.height, cell: 0, row: rowItem.row, offset: [...this.offset] }
+                    this.selectArea.rowCount = 1
+                    this.selectArea.cellCount = Infinity
+                    this.$emit('focus', this.allRows[rowItem.row].rowData)
+                }
+            } else if (cell.hover) {
+                cell.down = true
+                const column = this.getColumnAt(eX)
+                if (column) {
+                    cell.obj = { ...column }
+                    this.focusCell = [0, column.cell]
+                    this.offset[1] = 0
+                    this.selectArea = { type: 0, x: column.realX, y: config.height.columns, width: column.width, height: Infinity, cell: column.cell, row: 0, offset: [...this.offset] }
+                    this.selectArea.rowCount = Infinity
+                    this.selectArea.cellCount = 1
+                    this.$emit('focus', this.allRows[0].rowData)
+                }
+            } else if (all.hover) {
+                this.focusCell = [0, 0]
+                this.offset = [0, 0]
+                this.selectArea = { type: 0, x: config.width.serial, y: config.height.columns, width: Infinity, height: Infinity, cell: 0, row: 0, offset: [...this.offset] }
+                this.selectArea.rowCount = Infinity
+                this.selectArea.cellCount = Infinity
+                this.$emit('focus', this.allRows[0].rowData)
+            }
+            if (!image.hover) {
+                for (const item of this.imageObjs) {
+                    item.focus = false
                 }
             }
+            requestAnimationFrame(this.painted)
         },
-        doSelectArea(eX, eY) {
-            const { width, height, row, cell: cellIndex, realX: x, realY: y } = this.getFocusCell(this.focusCell)
-            if (eX >= x && eX <= x + width && eY >= y && eY <= y + height) {
-                this.selectArea = null
-                requestAnimationFrame(this.painted)
-            } else {
-                if (eX < config.width.serial) {
-                    eX = config.width.serial
-                }
-                if (eY < config.height.columns) {
-                    eY = config.height.columns
-                }
-                if (eX > this.canvasWidth) {
-                    eX = this.canvasWidth
-                }
-                if (eY > this.canvasHeight) {
-                    eY = this.canvasHeight
-                }
-                const cell = this.getCellAt(eX, eY)
-                if (cell) {
-                    if (cell.realX >= x && cell.realY >= y) {
-                        this.selectArea = { type: 0, x, y, width: (cell.realX - x) + cell.width, height: (cell.realY - y) + cell.height, cell: cellIndex, row, offset: [...this.offset] }
-                    } else if (cell.realX >= x && cell.realY <= y) {
-                        this.selectArea = { type: 1, x, y: cell.realY, width: (cell.realX - x) + cell.width, height: (y - cell.realY) + height, row: cell.row, cell: cellIndex, offset: [...this.offset] }
-                    } else if (cell.realX <= x && cell.realY <= y) {
-                        this.selectArea = { type: 2, x: cell.realX, y: cell.realY, width: (x - cell.realX) + width, height: (y - cell.realY) + height, row: cell.row, cell: cell.cell, offset: [...this.offset] }
-                    } else if (cell.realX <= x && cell.realY >= y) {
-                        this.selectArea = { type: 3, x: cell.realX, y, width: (x - cell.realX) + width, height: (cell.realY - y) + cell.height, row, cell: cell.cell, offset: [...this.offset] }
-                    }
-                    this.selectArea.rowCount = Math.abs(cell.row - row) + 1
-                    this.selectArea.cellCount = Math.abs(cell.cell - cellIndex) + 1
-                    requestAnimationFrame(this.painted)
-                }
-            }
-        },
+
         handleMousemove(e) {
             const eX = e.clientX - this.canvasX
             const eY = e.clientY - this.canvasY
-            this.mouse[0] = eX
-            this.mouse[1] = eY
+            const { image, rowDivide, cellDivide, focus, table, rowMove, cellMove, row, cell, all } = this.mouse
+            if (image.down) {
+                image.obj.img.x += e.movementX
+                image.obj.img.y += e.movementY
+                requestAnimationFrame(this.paintedImage)
+                return
+            } else if (rowDivide.down) {
+                if (eY > rowDivide.obj.minY) {
+                    rowDivide.obj.y = eY
+                } else {
+                    rowDivide.obj.y = rowDivide.obj.minY
+                }
+            } else if (cellDivide.down) {
+                if (eX > cellDivide.obj.minX) {
+                    cellDivide.obj.x = eX
+                } else {
+                    cellDivide.obj.x = cellDivide.obj.minX
+                }
+            } else if (focus.down) {
+
+            } else if (table.down) {
+                this.doSelectArea(eX, eY)
+            } else if (rowMove.down) {
+
+            } else if (cellMove.down) {
+
+            } else if (row.down) {
+                const rowItem = this.getRowAt(eY)
+                if (rowItem) {
+                    if (row.obj.row <= row.row) {
+                        this.selectArea.type = 0
+                        this.selectArea.y = row.obj.realY
+                        this.selectArea.height = (rowItem.realY - row.obj.realY) + rowItem.height
+                        this.selectArea.row = row.obj.row
+                    } else {
+                        this.selectArea.type = 1
+                        this.selectArea.y = rowItem.realY
+                        this.selectArea.height = (row.obj.realY - rowItem.realY) + row.obj.height
+                        this.selectArea.row = rowItem.row
+                    }
+                    this.selectArea.rowCount = Math.abs(row.obj.row - rowItem.row)
+                    requestAnimationFrame(this.painted)
+                    this.$emit('focus', this.allRows[rowItem.row].rowData)
+                }
+            } else if (cell.down) {
+                const column = this.getColumnAt(eX)
+                if (column) {
+                    if (this.columnSelect.cell <= column.cell) {
+                        this.selectArea.x = this.columnSelect.realX
+                        this.selectArea.width = (column.realX - this.columnSelect.realX) + column.width
+                        this.selectArea.cell = this.columnSelect.cell
+                    } else {
+                        this.selectArea.x = column.realX
+                        this.selectArea.width = (this.columnSelect.realX - column.realX) + this.columnSelect.width
+                        this.selectArea.cell = column.cell
+                    }
+                    this.selectArea.cellCount = Math.abs(this.columnSelect.cell - column.cell)
+                    requestAnimationFrame(this.painted)
+                    this.$emit('focus', this.allRows[0].rowData)
+                }
+            } else if (e.target.classList.contains('canvas-plugin')) {
+                this.mouseoverSet(eX, eY)
+            }
+            requestAnimationFrame(this.painted)
+        },
+        handleMousemove1(e) {
+            const eX = e.clientX - this.canvasX
+            const eY = e.clientY - this.canvasY
             this.isHoverFocusCopy = false
             this.isHoverColumn = false
             this.isHoverRow = false
             this.isHoverGrid = false
-            this.isColumnDraggingDown = false
             if (!this.isHoverRowDivideDown) {
                 this.hoverRowDivide = null
             }
@@ -237,7 +309,6 @@ export default {
             if (this.imageObjs.length > 0) {
                 this.imageObjs.forEach((item) => { item.hover = false })
                 for (const item of this.imageObjs) {
-                    // if (utils.rayCasting({ x: eX, y: eY }, [{ x: item.x, y: item.y }, { x: item.x, y: item.y + item.height }, { x: item.x + item.width, y: item.y + item.height }, { x: item.x + item.width, y: item.y }])) {
                     if (item.point && utils.isInRegion([eX, eY], [item.point[0][0] - 5, item.point[0][1] - 5], [item.point[2][0] + 5, item.point[2][1] + 5])) {
                         this.setCursor('move')
                         item.hover = true
@@ -263,7 +334,9 @@ export default {
                 }
                 requestAnimationFrame(this.painted)
             } else if (this.isColumnDraggingDown) {
-
+                // TODO 列拖拽换位置
+            } else if (this.isRowDraggingDown) {
+                // TODO 行拖拽
             } else if (this.rowSelect) {
                 const row = this.getRowAt(eY)
                 if (row) {
@@ -392,8 +465,13 @@ export default {
                             if (!this.hoverRowDivide) {
                                 this.hoverRowDivide = { y: row.realY + row.height, row, minY: row.realY }
                             }
-                        } else if (this.hoverRowDivide) {
-                            this.hoverRowDivide = null
+                        } else {
+                            if (this.hoverRowDivide) {
+                                this.hoverRowDivide = null
+                            }
+                            if (this.selectArea && this.selectArea.cellCount === Infinity && eY > this.selectArea.y && eY < this.selectArea.y + this.selectArea.height) {
+                                this.setCursor('-webkit-grab')
+                            }
                         }
                     } else {
                         this.hoverRowDivide = null
@@ -412,10 +490,8 @@ export default {
                             if (this.hoverColumnDivide) {
                                 this.hoverColumnDivide = null
                             }
-                            if (this.selectArea && this.selectArea.rowCount === Infinity) {
-                                if (eX > this.selectArea.x && eX < this.selectArea.x + this.selectArea.width) {
-                                    this.setCursor('-webkit-grab')
-                                }
+                            if (this.selectArea && this.selectArea.rowCount === Infinity && eX > this.selectArea.x && eX < this.selectArea.x + this.selectArea.width) {
+                                this.setCursor('-webkit-grab')
                             }
                         }
                     } else {
@@ -426,7 +502,132 @@ export default {
                 }
             }
         },
+        mouseoverSet(eX, eY) {
+            this.clearHover()
+            if (utils.isInRegion([eX, eY], [config.width.serial, config.height.columns], [this.canvasWidth, this.canvasHeight])) {
+                let hoverImage = false
+                if (this.imageObjs.length > 0) {
+                    this.imageObjs.forEach((item) => { item.hover = false })
+                    for (const item of this.imageObjs) {
+                        if (item.point && utils.isInRegion([eX, eY], [item.point[0][0] - 5, item.point[0][1] - 5], [item.point[2][0] + 5, item.point[2][1] + 5])) {
+                            this.setCursor('move')
+                            this.mouse.image.hover = true
+                            hoverImage = true
+                            break
+                        }
+                    }
+                }
+                if (!hoverImage) {
+                    let pointX = 0
+                    let pointY = 0
+                    if (this.selectArea) {
+                        pointX = this.selectArea.x + this.selectArea.width
+                        pointY = this.selectArea.y + this.selectArea.height
+                    } else {
+                        const focusCellItem = this.getFocusCell(this.focusCell)
+                        pointX = focusCellItem.realX + focusCellItem.width
+                        pointY = focusCellItem.realY + focusCellItem.height
+                    }
+                    if (utils.isInRegion([eX, eY], [pointX - 3, pointY - 3], [pointX + 4, pointY + 4])) {
+                        this.setCursor('crosshair')
+                        this.mouse.focus.hover = true
+                    } else {
+                        this.setCursor('cell')
+                        this.mouse.table.hover = true
+                    }
+                }
+            } else if (utils.isInRegion([eX, eY], [0, config.height.columns], [config.width.serial, this.canvasHeight])) {
+                const row = this.isInRowDivide(eY)
+                if (row) {
+                    this.setCursor('row-resize')
+                    this.mouse.rowDivide.hover = true
+                    this.mouse.rowDivide.obj = { y: row.realY + row.height, row, minY: row.realY }
+                } else if (this.selectArea && this.selectArea.cellCount === Infinity && eY > this.selectArea.y && eY < this.selectArea.y + this.selectArea.height) {
+                    this.setCursor('-webkit-grab')
+                    this.mouse.rowMove.hover = true
+                } else {
+                    this.setCursor('e-resize')
+                    this.mouse.row.hover = true
+                }
+            } else if (utils.isInRegion([eX, eY], [config.width.serial, 0], [this.canvasWidth, config.height.columns])) {
+                const column = this.isInColumnDivide(eX)
+                if (column) {
+                    this.setCursor('col-resize')
+                    this.mouse.cellDivide.hover = true
+                    this.mouse.cellDivide.obj = { x: column.realX + column.width, column, minX: column.realX }
+                } else if (this.selectArea && this.selectArea.rowCount === Infinity && eX > this.selectArea.x && eX < this.selectArea.x + this.selectArea.width) {
+                    this.setCursor('-webkit-grab')
+                    this.mouse.cellMove.hover = true
+                } else {
+                    this.setCursor('s-resize')
+                    this.mouse.cell.hover = true
+                }
+            } else if (utils.isInRegion([eX, eY], [0, 0], [config.width.serial - 2, config.height.columns - 2])) {
+                this.setCursor('se-resize')
+                this.mouse.all.hover = true
+            }
+        },
+        clearHover() {
+            for (const key in this.mouse) {
+                if (this.mouse[key].hover) {
+                    this.mouse[key].hover = false
+                }
+            }
+        },
+        clearDown() {
+            for (const key in this.mouse) {
+                if (this.mouse[key].down) {
+                    this.mouse[key].down = false
+                }
+            }
+        },
+        setCursor(type) {
+            if (this.$refs['canvas-plugin'].style.cursor !== type) {
+                this.$refs['canvas-plugin'].style.cursor = type
+            }
+        },
         handleMouseup(e) {
+            const eX = e.clientX - this.canvasX
+            const eY = e.clientY - this.canvasY
+            const { image, rowDivide, cellDivide } = this.mouse
+            if (image.down) {
+                image.down = false
+                image.obj = null
+                requestAnimationFrame(this.paintedImage)
+                return
+            } else if (rowDivide.down) {
+                const differenceValue = rowDivide.obj.y - (rowDivide.obj.row.realY + rowDivide.obj.row.height)
+                this.allRows[rowDivide.obj.row.row].height += differenceValue
+                for (let i = rowDivide.obj.row.row + 1; i < this.allRows.length; i += 1) {
+                    this.allRows[i].y += differenceValue
+                }
+                if (this.selectArea) {
+                    this.selectArea = null
+                }
+                this.bodyHeight += differenceValue
+                rowDivide.down = false
+                rowDivide.obj = null
+                requestAnimationFrame(this.painted)
+            } else if (cellDivide.down) {
+                const differenceValue = cellDivide.obj.x - (cellDivide.obj.column.realX + cellDivide.obj.column.width)
+                this.allColumns[cellDivide.obj.column.cell].width += differenceValue
+
+                for (let i = cellDivide.obj.column.cell + 1; i < this.allColumns.length; i += 1) {
+                    this.allColumns[i].x += differenceValue
+                }
+                if (this.selectArea) {
+                    this.selectArea = null
+                    // TODO selectArea宽度重置，3种情况
+                }
+                this.bodyWidth += differenceValue
+                cellDivide.down = false
+                cellDivide.obj = null
+                requestAnimationFrame(this.painted)
+            }
+            this.mouseoverSet(eX, eY)
+            this.clearDown()
+        },
+        handleMouseup1(e) {
             const eX = e.clientX - this.canvasX
             const eY = e.clientY - this.canvasY
             this.isDown = false
@@ -437,51 +638,19 @@ export default {
                 this.isImgMoveDown = false
                 requestAnimationFrame(this.painted)
             }
+            if (this.selectArea) {
+                if (this.selectArea.rowCount === Infinity && eX > this.selectArea.x && eX < this.selectArea.x + this.selectArea.width) {
+                    this.setCursor('-webkit-grab')
+                } else if (this.selectArea.cellCount === Infinity && eY > this.selectArea.y && eY < this.selectArea.y + this.selectArea.height) {
+                    this.setCursor('-webkit-grab')
+                }
+            }
+
+            this.isColumnDraggingDown = false
+            this.isRowDraggingDown = false
             this.horizontalBar.move = false
             this.verticalBar.move = false
-            if (this.isHoverRowDivideDown) {
-                const differenceValue = this.hoverRowDivide.y - (this.hoverRowDivide.row.realY + this.hoverRowDivide.row.height)
-                this.allRows[this.hoverRowDivide.row.row].height += differenceValue
-                for (let i = this.hoverRowDivide.row.row + 1; i < this.allRows.length; i += 1) {
-                    this.allRows[i].y += differenceValue
-                }
-                if (this.selectArea) {
-                    // TODO selectArea高度重置，3种情况
-                    this.selectArea = null
-                }
-                this.bodyHeight += differenceValue
-                this.isHoverRowDivideDown = false
-                this.hoverRowDivide = null
-                requestAnimationFrame(this.painted)
-
-                if (eX > 0 && eX < config.width.serial) {
-                    const row = this.isInRowDivide(eY)
-                    if (row) {
-                        this.hoverRowDivide = { y: row.realY + row.height, row, minY: row.realY }
-                    }
-                }
-            } else if (this.isHoverColumnDivideDown) {
-                const differenceValue = this.hoverColumnDivide.x - (this.hoverColumnDivide.column.realX + this.hoverColumnDivide.column.width)
-                this.allColumns[this.hoverColumnDivide.column.cell].width += differenceValue
-
-                for (let i = this.hoverColumnDivide.column.cell + 1; i < this.allColumns.length; i += 1) {
-                    this.allColumns[i].x += differenceValue
-                }
-                if (this.selectArea) {
-                    this.selectArea = null
-                    // TODO selectArea宽度重置，3种情况
-                }
-                this.bodyWidth += differenceValue
-                this.isHoverColumnDivideDown = false
-                this.hoverColumnDivide = null
-                requestAnimationFrame(this.painted)
-                if (eY > 0 && eY < config.height.columns) {
-                    const column = this.isInColumnDivide(eX)
-                    if (column) {
-                        this.hoverColumnDivide = { x: column.realX + column.width, column, minX: column.realX }
-                    }
-                }
-            } else if (this.focusCopy) {
+            if (this.focusCopy) {
                 const copyData = []
                 if (this.selectArea) {
                     // todo selectarea copy

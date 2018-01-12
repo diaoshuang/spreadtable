@@ -128,22 +128,22 @@ export default {
                 this.paintImage(pluginCtx, imageObjs)
             }
 
-            if (this.isHoverRowDivideDown) {
+            if (this.mouse.rowDivide.down) {
                 ctx.beginPath()
                 ctx.strokeStyle = '#333'
-                ctx.moveTo(...mapPoint(0, hoverRowDivide.y))
-                ctx.lineTo(...mapPoint(canvasWidth, hoverRowDivide.y))
-                ctx.moveTo(...mapPoint(0, hoverRowDivide.row.realY))
-                ctx.lineTo(...mapPoint(canvasWidth, this.hoverRowDivide.row.realY))
+                ctx.moveTo(...mapPoint(0, this.mouse.rowDivide.obj.y))
+                ctx.lineTo(...mapPoint(canvasWidth, this.mouse.rowDivide.obj.y))
+                ctx.moveTo(...mapPoint(0, this.mouse.rowDivide.obj.row.realY))
+                ctx.lineTo(...mapPoint(canvasWidth, this.mouse.rowDivide.obj.row.realY))
                 ctx.stroke()
             }
-            if (this.isHoverColumnDivideDown) {
+            if (this.mouse.cellDivide.down) {
                 ctx.beginPath()
                 ctx.strokeStyle = '#333'
-                ctx.moveTo(...mapPoint(hoverColumnDivide.x, 0))
-                ctx.lineTo(...mapPoint(hoverColumnDivide.x, canvasHeight))
-                ctx.moveTo(...mapPoint(hoverColumnDivide.column.realX, 0))
-                ctx.lineTo(...mapPoint(hoverColumnDivide.column.realX, canvasHeight))
+                ctx.moveTo(...mapPoint(this.mouse.cellDivide.obj.x, 0))
+                ctx.lineTo(...mapPoint(this.mouse.cellDivide.obj.x, canvasHeight))
+                ctx.moveTo(...mapPoint(this.mouse.cellDivide.obj.column.realX, 0))
+                ctx.lineTo(...mapPoint(this.mouse.cellDivide.obj.column.realX, canvasHeight))
                 ctx.stroke()
             }
 
@@ -432,7 +432,8 @@ export default {
             item.point[3] = [item.x - 1, item.y + (item.height) + 1]
 
             ctx.drawImage(item.img, ...mapPoint(item.x, item.y), item.width * this.ratio, item.height * this.ratio)
-            if (this.imgFocus && !this.isImgMoveDown) {
+            console.log(item, this.mouse.image.down)
+            if (item.focus && !this.mouse.image.down) {
                 this.paintImageBorder(ctx, item.point, item)
             }
         },

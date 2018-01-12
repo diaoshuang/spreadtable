@@ -84,7 +84,7 @@
                 <input ref="setHeightInput" type="text" v-model="setRowheight">
             </div>
         </modal>
-         <modal v-if="cellWidthDialog" @close="cellWidthDialog = false" @submit="setWidth">
+        <modal v-if="cellWidthDialog" @close="cellWidthDialog = false" @submit="setWidth">
             <div slot="header">
                 列宽
             </div>
@@ -264,11 +264,13 @@ export default {
             for (const row of this.display.rows) {
                 if (y >= row.realY && y <= row.realY + row.height) {
                     rowIndex = row.row
+                    break
                 }
             }
             for (const column of this.display.columns) {
-                if (x >= column.realX && x <= column.realX + column.width) {
+                if (x >= column.realX && x < column.realX + column.width) {
                     cellIndex = column.cell
+                    break
                 }
             }
             return this.getFocusCell([rowIndex, cellIndex])
@@ -390,6 +392,41 @@ export default {
                 focusColumn = { x: focusCell.realX, width: focusCell.width }
             }
             return { focusRow, focusColumn }
+        },
+        doSelectArea(eX, eY) {
+            const { width, height, row, cell: cellIndex, realX: x, realY: y } = this.getFocusCell(this.focusCell)
+            if (eX >= x && eX <= x + width && eY >= y && eY <= y + height) {
+                this.selectArea = null
+                requestAnimationFrame(this.painted)
+            } else {
+                if (eX < config.width.serial) {
+                    eX = config.width.serial
+                }
+                if (eY < config.height.columns) {
+                    eY = config.height.columns
+                }
+                if (eX > this.canvasWidth) {
+                    eX = this.canvasWidth
+                }
+                if (eY > this.canvasHeight) {
+                    eY = this.canvasHeight
+                }
+                const cell = this.getCellAt(eX, eY)
+                if (cell) {
+                    if (cell.realX >= x && cell.realY >= y) {
+                        this.selectArea = { type: 0, x, y, width: (cell.realX - x) + cell.width, height: (cell.realY - y) + cell.height, cell: cellIndex, row, offset: [...this.offset] }
+                    } else if (cell.realX >= x && cell.realY <= y) {
+                        this.selectArea = { type: 1, x, y: cell.realY, width: (cell.realX - x) + cell.width, height: (y - cell.realY) + height, row: cell.row, cell: cellIndex, offset: [...this.offset] }
+                    } else if (cell.realX <= x && cell.realY <= y) {
+                        this.selectArea = { type: 2, x: cell.realX, y: cell.realY, width: (x - cell.realX) + width, height: (y - cell.realY) + height, row: cell.row, cell: cell.cell, offset: [...this.offset] }
+                    } else if (cell.realX <= x && cell.realY >= y) {
+                        this.selectArea = { type: 3, x: cell.realX, y, width: (x - cell.realX) + width, height: (cell.realY - y) + cell.height, row, cell: cell.cell, offset: [...this.offset] }
+                    }
+                    this.selectArea.rowCount = Math.abs(cell.row - row) + 1
+                    this.selectArea.cellCount = Math.abs(cell.cell - cellIndex) + 1
+                    requestAnimationFrame(this.painted)
+                }
+            }
         },
         setValueTemp(e) {
             this.valueTemp = e.target.innerText
@@ -559,11 +596,6 @@ export default {
             this.allCells[anchor[0]][anchor[1]].text = value
             this.allCells[anchor[0]][anchor[1]].paintText = [value]
         },
-        setCursor(type) {
-            if (this.$refs['canvas-plugin'].style.cursor !== type) {
-                this.$refs['canvas-plugin'].style.cursor = type
-            }
-        },
         isInVerticalQuadrant(focusCell, x, y) {
             const startPoint = [focusCell.x, focusCell.y]
             const endPoint = [focusCell.x + focusCell.width, focusCell.y + focusCell.height]
@@ -719,23 +751,23 @@ export default {
   .navbar {
     box-sizing: border-box;
     height: 36px;
-    padding-top:5px;
-    background:#539671;
+    padding-top: 5px;
+    background: #539671;
     background: linear-gradient(#4e8a69, #276f47);
-    cursor:default;
-    .nav-item{
-        display:inline-block;
-        line-height:26px;
-        padding:0 15px 5px;
-        margin:0 5px;
-        border-top-left-radius: 3px;
-        border-top-right-radius: 3px;
-        font-size:14px;
-        color:#fff;
-        font-weight:bold;
-        &:hover{
-            background-color:#469469;
-        }
+    cursor: default;
+    .nav-item {
+      display: inline-block;
+      line-height: 26px;
+      padding: 0 15px 5px;
+      margin: 0 5px;
+      border-top-left-radius: 3px;
+      border-top-right-radius: 3px;
+      font-size: 14px;
+      color: #fff;
+      font-weight: bold;
+      &:hover {
+        background-color: #469469;
+      }
     }
     .cur-nav {
       background-color: #f6f6f6;
@@ -745,62 +777,63 @@ export default {
       }
     }
   }
-  .tool{
-      padding:5px 0;
-      background-color:#f6f6f6;
-      font-size:0;
-      line-height:1;
-      cursor:default;
-      overflow:auto;
-      .tool-item{
-          float:left;
-          height:60px;
-          padding:0 10px;
-          border-right:1px solid #ddd;
-          select{
-              font-size:12px;
-              border:1px solid #ddd;
-              height: 26px;
-              padding:0 7px;
-              outline: none;
-          }
+  .tool {
+    padding: 5px 0;
+    background-color: #f6f6f6;
+    font-size: 0;
+    height: 60px;
+    line-height: 1;
+    cursor: default;
+    overflow: auto;
+    .tool-item {
+      float: left;
+      height: 60px;
+      padding: 0 10px;
+      border-right: 1px solid #ddd;
+      select {
+        font-size: 12px;
+        border: 1px solid #ddd;
+        height: 26px;
+        padding: 0 7px;
+        outline: none;
       }
-      .tool-btn{
-          display:inline-block;
-          padding:3px;
-          text-align:center;
-          font-size:12px;
-          &:hover{
-              background-color:#dedede;
-          }
+    }
+    .tool-btn {
+      display: inline-block;
+      padding: 3px;
+      text-align: center;
+      font-size: 12px;
+      &:hover {
+        background-color: #dedede;
       }
-      .paste{
-          float: left;
-          margin-right:5px;
-          text-align:center;
-          img{
-              width:36px;
-              margin-bottom:5px;
-          }
+    }
+    .paste {
+      float: left;
+      margin-right: 5px;
+      text-align: center;
+      img {
+        width: 36px;
+        margin-bottom: 5px;
       }
-      .cut-copy{
-          float:left;
-          img{
-              width:20px;
-              vertical-align: -5px;
-              margin-right:3px;
-          }
+    }
+    .cut-copy {
+      float: left;
+      img {
+        width: 20px;
+        vertical-align: -5px;
+        margin-right: 3px;
       }
-      .font-style-btn{
-          margin-top:10px;
-          display:inline-block;
-          border:1px solid #ddd;
-          border-radius:3px;
-          .tool-btn{
-              width:16px;
-              font-size:14px;
-          }
+    }
+    .font-style-btn {
+      margin-top: 10px;
+      display: inline-block;
+      border: 1px solid #ddd;
+      border-radius: 3px;
+      .tool-btn {
+        width: 16px;
+        font-size: 14px;
       }
+    }
   }
   .fx {
     height: 28px;
@@ -835,7 +868,7 @@ export default {
   }
 }
 .input-label {
-    font-size: 13px;
-    margin-right: 20px;
+  font-size: 13px;
+  margin-right: 20px;
 }
 </style>
