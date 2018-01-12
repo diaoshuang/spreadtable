@@ -4,7 +4,32 @@
             <span v-for="item in navList" class="nav-item" :class="{'cur-nav':item===tool}" @click="changeTool(item)">{{item}}</span>
         </div>
         <div class="tool" v-if="tool==='开始'">
-            复制-粘贴
+            <div class="tool-item">
+                <div class="paste tool-btn">
+                    <img src="../assets/paste.png"><br/>
+                    <span>粘贴</span>
+                </div>
+                <div class="cut-copy">
+                    <span class="tool-btn">
+                        <img src="../assets/cut.png" alt="">
+                        <span>剪切</span>
+                    </span>
+                    <br/>
+                    <span class="tool-btn" style="margin-top:8px;">
+                        <img src="../assets/copy.png" alt="">
+                        <span>复制</span>
+                    </span>
+                </div>
+            </div>
+            <div class="tool-item">
+                <select name="" id="" class="font-family-select" style="width:120px;"></select>
+                <select name="" id="" class="font-size-select" style="width:60px;"></select><br/>
+                <div class="font-style-btn">
+                    <span class="tool-btn" style="font-weight:bold;">B</span>
+                    <span class="tool-btn" style="font-style:italic; border-left:1px solid #ddd; border-right:1px solid #ddd;">I</span>
+                    <span class="tool-btn" style="text-decoration:underline;">U</span>
+                </div>
+            </div>
         </div>
         <div class="tool" v-else-if="tool==='插入'">
             <button @click="addImg">插入图片</button>
@@ -14,7 +39,8 @@
             <div class="fx-content-label">确定</div>
             <div class="fx-content">
                 <div class="fx-content-input">
-                    fx | <input type="text">
+                    <img src="../assets/fx.png">
+                    <input type="text">
                 </div>
             </div>
         </div>
@@ -629,10 +655,8 @@ export default {
     box-sizing:border-box;
     height: 36px;
     padding-top:5px;
-    font-size:14px;
-    color:#fff;
     background:#539671;
-    background: linear-gradient(#539671, #276f47);
+    background: linear-gradient(#4e8a69, #276f47);
     cursor:default;
     .nav-item{
         display:inline-block;
@@ -641,6 +665,9 @@ export default {
         margin:0 5px;
         border-top-left-radius: 3px;
         border-top-right-radius: 3px;
+        font-size:14px;
+        color:#fff;
+        font-weight:bold;
         &:hover{
             background-color:#469469;
         }
@@ -654,8 +681,66 @@ export default {
     }
   }
   .tool{
-      padding:5px 10px;
+      padding:5px 0;
       background-color:#f6f6f6;
+      font-size:0;
+      line-height:1;
+      cursor:default;
+      overflow:auto;
+      .tool-item{
+          float:left;
+          height:60px;
+          padding:0 10px;
+          border-right:1px solid #ddd;
+          select{
+              font-size:12px;
+              border:1px solid #ddd;
+              height: 26px;
+              padding:0 7px;
+              outline: none;
+          }
+      }
+      .tool-btn{
+          display:inline-block;
+          padding:3px;
+          text-align:center;
+          font-size:12px;
+          &:hover{
+              background-color:#dedede;
+          }
+      }
+      .paste{
+          float: left;
+          margin-right:5px;
+          text-align:center;
+          img{
+              width:36px;
+              margin-bottom:5px;
+          }
+      }
+      .cut-copy{
+          float:left;
+          img{
+              width:20px;
+              vertical-align: -5px;
+              margin-right:3px;
+          }
+      }
+      .font-style-btn{
+          margin-top:10px;
+          display:inline-block;
+          border:1px solid #ddd;
+          border-radius:3px;
+          .tool-btn{
+              width:16px;
+              font-size:14px;
+          }
+      }
+      .font-family-select{
+          width:100px;
+          height: 20px;
+      }
+      .font-size-select{}
   }
   .fx {
     height: 28px;
