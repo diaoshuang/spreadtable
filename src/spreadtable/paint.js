@@ -66,7 +66,7 @@ export default {
         },
         paintMain(ctx, pluginCtx, columns, rows, cells) {
             const { canvasWidth, canvasHeight, ratio, selectArea, offset: [oX, oY],
-                focusCell, focusCopy, hoverRowDivide, hoverColumnDivide, imageObjs } = this
+                focusCell, mouse, imageObjs } = this
             const focusCellItem = this.getFocusCell(focusCell)
             ctx.beginPath()
             ctx.lineWidth = 1 * ratio
@@ -111,11 +111,11 @@ export default {
             // 绘制数据
             this.paintData(ctx, cells, cellsRowStart, cellsRowEnd, cellsColumnStart, cellsColumnEnd)
 
-            if (this.isFocusCopyDown && focusCopy) {
+            if (mouse.focus.down && mouse.focus.obj) {
                 ctx.strokeStyle = '#237245'
                 ctx.fillStyle = 'rgba(36,114,69,0.05)'
-                ctx.strokeRect(...mapPoint(focusCopy.x, focusCopy.y), ...mapSize(focusCopy.width, focusCopy.height))
-                ctx.fillRect(...mapPoint(focusCopy.x, focusCopy.y), ...mapSize(focusCopy.width, focusCopy.height))
+                ctx.strokeRect(...mapPoint(mouse.focus.obj.x, mouse.focus.obj.y), ...mapSize(mouse.focus.obj.width, mouse.focus.obj.height))
+                ctx.fillRect(...mapPoint(mouse.focus.obj.x, mouse.focus.obj.y), ...mapSize(mouse.focus.obj.width, mouse.focus.obj.height))
             }
 
             if (selectArea) {
@@ -128,7 +128,7 @@ export default {
                 this.paintImage(pluginCtx, imageObjs)
             }
 
-            if (this.mouse.rowDivide.down) {
+            if (mouse.rowDivide.down) {
                 ctx.beginPath()
                 ctx.strokeStyle = '#333'
                 ctx.moveTo(...mapPoint(0, this.mouse.rowDivide.obj.y))
@@ -137,7 +137,7 @@ export default {
                 ctx.lineTo(...mapPoint(canvasWidth, this.mouse.rowDivide.obj.row.realY))
                 ctx.stroke()
             }
-            if (this.mouse.cellDivide.down) {
+            if (mouse.cellDivide.down) {
                 ctx.beginPath()
                 ctx.strokeStyle = '#333'
                 ctx.moveTo(...mapPoint(this.mouse.cellDivide.obj.x, 0))
@@ -187,9 +187,9 @@ export default {
                     ctx.moveTo(...mapPoint(x + width, 0, FIX))
                     ctx.lineTo(...mapPoint(x + width, config.height.columns, FIX))
                     if (width > 10) {
-                        this.paintText(ctx, ...mapPoint(x + utils.half(width), 13), [title])
+                        this.paintText(ctx, ...mapPoint(x + utils.half(width), 12), [title])
                     } else if (width > 0) {
-                        this.paintText(ctx, ...mapPoint(x + utils.half(width), 13), ['.'])
+                        this.paintText(ctx, ...mapPoint(x + utils.half(width), 12), ['.'])
                     }
                 }
             }
@@ -210,9 +210,9 @@ export default {
                     ctx.moveTo(...mapPoint(0, y + height, FIX))
                     ctx.lineTo(...mapPoint(config.width.serial, y + height))
                     if (height > 10) {
-                        this.paintText(ctx, ...mapPoint(utils.half(config.width.serial), y + 11), [row + 1])
+                        this.paintText(ctx, ...mapPoint(utils.half(config.width.serial), y + 10), [row + 1])
                     } else if (height > 0) {
-                        this.paintText(ctx, ...mapPoint(utils.half(config.width.serial), y + 11), ['.'])
+                        this.paintText(ctx, ...mapPoint(utils.half(config.width.serial), y + 10), ['.'])
                     }
                 }
             }
@@ -321,11 +321,11 @@ export default {
                                 ctx.fillRect(...mapPoint(cell.x + 2, cell.y + 1), ...mapSize(ctx.measureText(cell.paintText).width / 2, cell.height - 1))
                             }
                             ctx.fillStyle = '#333'
-                            this.paintText(ctx, ...mapPoint(cell.x + 2, cell.y + 11), [cell.paintText], maxWidth * ratio)
+                            this.paintText(ctx, ...mapPoint(cell.x + 2, cell.y + 10), [cell.paintText], maxWidth * ratio)
                         } else {
                             ctx.textAlign = 'right'
                             ctx.fillStyle = '#333'
-                            this.paintText(ctx, ...mapPoint((cell.x + cell.width) - 2, cell.y + 11), [cell.paintText])
+                            this.paintText(ctx, ...mapPoint((cell.x + cell.width) - 3, cell.y + 10), [cell.paintText])
                         }
                     }
                 }
@@ -391,11 +391,11 @@ export default {
                                 ctx.fillRect(...mapPoint(item.realX + 3, item.realY + 1), ...mapSize(ctx.measureText(item.paintText).width / ratio, item.height - 1))
                             }
                             ctx.fillStyle = '#333'
-                            this.paintText(ctx, ...mapPoint(item.realX + 3, item.realY + 11), [item.paintText], maxWidth * ratio)
+                            this.paintText(ctx, ...mapPoint(item.realX + 3, item.realY + 10), [item.paintText], maxWidth * ratio)
                         } else {
                             ctx.textAlign = 'right'
                             ctx.fillStyle = '#333'
-                            this.paintText(ctx, ...mapPoint((item.realX + item.width) - 3, item.realY + 11), [item.paintText])
+                            this.paintText(ctx, ...mapPoint((item.realX + item.width) - 3, item.realY + 10), [item.paintText])
                         }
                     }
                 }
@@ -432,7 +432,6 @@ export default {
             item.point[3] = [item.x - 1, item.y + (item.height) + 1]
 
             ctx.drawImage(item.img, ...mapPoint(item.x, item.y), item.width * this.ratio, item.height * this.ratio)
-            console.log(item, this.mouse.image.down)
             if (item.focus && !this.mouse.image.down) {
                 this.paintImageBorder(ctx, item.point, item)
             }

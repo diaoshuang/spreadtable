@@ -432,19 +432,24 @@ export default {
             this.valueTemp = e.target.innerText
             const focusCellItem = this.getFocusCell(this.focusCell)
             const { width, height, row, cell } = focusCellItem
-            let { x, y } = focusCellItem
+            let { realX: x, realY: y } = focusCellItem
             if (x < config.width.serial) {
-                this.offset.x += config.width.serial - x
+                this.offset[0] += config.width.serial - x
                 x = config.width.serial
+
+                requestAnimationFrame(this.painted)
             }
             if (y < config.height.columns) {
-                this.offset.y += config.height.columns - y
+                this.offset[1] += config.height.columns - y
                 y = config.height.columns
+                requestAnimationFrame(this.painted)
             }
 
             if (!this.isPaste) {
                 // 正常键盘录入
-                this.showInput(x, y, width, height)
+                if (!this.isEditing) {
+                    this.showInput(x, y, width, height)
+                }
             } else if (!this.isEditing) {
                 this.isPaste = false
                 const objE = document.createElement('div')
@@ -702,6 +707,9 @@ export default {
 </script>
 
 <style lang="scss">
+* {
+    font-family: "PingFang SC", "Lantinghei SC", "Microsoft YaHei", "HanHei SC", "Helvetica Neue", "Open Sans", Arial, "Hiragino Sans GB", "微软雅黑", "STHeiti", "WenQuanYi Micro Hei", SimSun, sans-serif;
+}
 .spreadtable {
   display: inline-block;
   overflow: hidden;
