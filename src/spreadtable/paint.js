@@ -348,7 +348,7 @@ export default {
                 ctx.strokeStyle = '#237245'
                 if (focusRow) {
                     const height = (focusRow.height === Infinity) ? bodyHeight : focusRow.height
-                    if ((selectArea && selectArea.x <= config.width.serial && selectArea.x + selectArea.width >= config.width.serial) || focusCell.realX <= config.width.serial) {
+                    if ((selectArea && selectArea.x <= config.width.serial && selectArea.x + selectArea.width > config.width.serial) || (focusCell.realX <= config.width.serial && focusCell.realX + focusCell.width > config.height.columns)) {
                         ctx.moveTo(...mapPoint(config.width.serial, focusRow.y - 1))
                         ctx.lineTo(...mapPoint(config.width.serial, focusRow.y + height + 2))
                     } else {
@@ -358,7 +358,7 @@ export default {
                 }
                 if (focusColumn) {
                     const width = (focusColumn.width === Infinity) ? bodyWidth : focusColumn.width
-                    if ((selectArea && selectArea.y <= config.height.columns && selectArea.y + selectArea.height >= config.height.columns) || focusCell.realY <= config.height.columns) {
+                    if ((selectArea && selectArea.y <= config.height.columns && selectArea.y + selectArea.height > config.height.columns) || (focusCell.realY <= config.height.columns && focusCell.realY + focusCell.height > config.height.columns)) {
                         ctx.moveTo(...mapPoint(focusColumn.x - 1, config.height.columns))
                         ctx.lineTo(...mapPoint(focusColumn.x + width + 2, config.height.columns))
                     } else {
@@ -374,6 +374,7 @@ export default {
             const { ratio, offset: [oX, oY] } = this
             ctx.font = `normal ${12 * ratio}px PingFang SC`
             ctx.textAlign = 'center'
+            ctx.textBaseline = 'middle'
             for (let i = cellsRowStart; i < cellsRowEnd; i += 1) {
                 for (let j = cellsColumnStart; j < cellsColumnEnd; j += 1) {
                     const item = cells[i][j]

@@ -44,17 +44,17 @@
                 </div>
             </div>
         </div>
-        <div class="spreadtable-main">
+        <div class="spreadtable-main" :style="`height:${canvasHeight+20}px;`">
             <div class="input-content" :style="inputStyles" ref="input" contenteditable="true" @input="setValueTemp" @keydown.tab.prevent @keydown.enter.prevent @keydown.esc.prevent></div>
             <div class="input-content" ref="inputSelect" contenteditable="true" @keydown.prevent></div>
             <canvas v-if="hasSize" ref="canvas" class="canvas-spreadtable" :width="canvasWidth*ratio" :height="canvasHeight*ratio" :style="`width:${canvasWidth}px;height:${canvasHeight}px;`"></canvas>
             <canvas v-if="hasSize" ref="canvas-plugin" class="canvas-plugin" :width="canvasWidth*ratio" :height="canvasHeight*ratio" :style="`width:${canvasWidth}px;height:${canvasHeight}px;`"></canvas>
-            <div class="horizontal-container" style="width:20px" @click="scroll($event,0)">
+            <div class="horizontal-container" :style="`width:${canvasWidth}px;`" @click="scroll($event,0)">
                 <div class="scroll-bar-horizontal" ref="horizontal" @mousedown="dragMove($event,0)" :style="{width:horizontalBar.size+'px',left:horizontalBar.x+'px'}">
                     <div :style="horizontalBar.move?'background-color:#a1a1a1;':'background-color:#c1c1c1;'"></div>
                 </div>
             </div>
-            <div class="vertical-container" style="height:20px" @click="scroll($event,1)">
+            <div class="vertical-container" :style="`height:${canvasHeight}px;`" @click="scroll($event,1)">
                 <div class="scroll-bar-vertical" ref="horizontal" @mousedown="dragMove($event,1)" :style="{height:verticalBar.size+'px',top:verticalBar.y+'px'}">
                     <div :style="verticalBar.move?'background-color:#a1a1a1;':'background-color:#c1c1c1;'"></div>
                 </div>
@@ -81,7 +81,7 @@
             </div>
             <div slot="body">
                 <label class="input-label">行高</label>
-                <input ref="setHeightInput" type="text" v-model="setRowheight">
+                <input ref="setHeightInput" type="text" v-model="setRowheight" @keydown.tab.prevent @keydown.enter.prevent @keydown.esc.prevent>
             </div>
         </modal>
         <modal v-if="cellWidthDialog" @close="cellWidthDialog = false" @submit="setWidth">
@@ -90,7 +90,7 @@
             </div>
             <div slot="body">
                 <label class="input-label">列宽</label>
-                <input ref="setWidthInput" type="text" v-model="setCellWidth">
+                <input ref="setWidthInput" type="text" v-model="setCellWidth" @keydown.tab.prevent @keydown.enter.prevent @keydown.esc.prevent>
             </div>
         </modal>
     </div>
@@ -649,8 +649,6 @@ export default {
             this.isPaste = true
         },
         addImg() {
-            this.imageObjs.sort((a, b) => b.sort - a.sort)
-
             this.imageObjs.push({
                 id: Date.now(),
                 url: 'http://www.baidu.com/img/bd_logo1.png',
@@ -660,11 +658,11 @@ export default {
                 hover: false,
                 sort: this.imageObjs.length > 0 ? this.imageObjs[this.imageObjs.length - 1].sort + 1 : 0,
             })
-            this.imageObjs.sort((a, b) => b.sort - a.sort)
-            let index = this.imageObjs.length - 1
+
+            let index = 0
             for (const item of this.imageObjs) {
                 item.sort = index
-                index -= 1
+                index += 1
             }
             requestAnimationFrame(this.painted)
         },
@@ -708,7 +706,9 @@ export default {
 
 <style lang="scss">
 * {
-    font-family: "PingFang SC", "Lantinghei SC", "Microsoft YaHei", "HanHei SC", "Helvetica Neue", "Open Sans", Arial, "Hiragino Sans GB", "微软雅黑", "STHeiti", "WenQuanYi Micro Hei", SimSun, sans-serif;
+  font-family: "PingFang SC", "Lantinghei SC", "Microsoft YaHei", "HanHei SC",
+    "Helvetica Neue", "Open Sans", Arial, "Hiragino Sans GB", "微软雅黑", "STHeiti",
+    "WenQuanYi Micro Hei", SimSun, sans-serif;
 }
 .spreadtable {
   display: inline-block;
@@ -716,11 +716,18 @@ export default {
   margin: 0;
   padding: 0;
   .spreadtable-main {
+    border-bottom: 1px solid#ddd;
     position: relative;
     canvas {
       border: 1px solid #bdbbbc;
       user-select: none;
       position: absolute;
+    }
+    .canvas-spreadtable {
+      z-index: 90;
+    }
+    .canvas-plugin {
+      z-index: 100;
     }
     .input-content {
       top: -10000px;
@@ -731,7 +738,7 @@ export default {
       font-size: 12px;
       position: fixed;
       background-color: #fff;
-      z-index: 10;
+      z-index: 95;
       line-height: 19px;
     }
   }
@@ -740,6 +747,7 @@ export default {
     width: 130px;
     border: 1px solid #ccc;
     background-color: #fff;
+    z-index: 10000;
     box-shadow: 2px 2px 3px #ddd;
     ul {
       margin: 0;
@@ -878,5 +886,41 @@ export default {
 .input-label {
   font-size: 13px;
   margin-right: 20px;
+}
+.horizontal-container {
+  position: absolute;
+  height: 18px;
+  left: 0;
+  bottom: 0;
+  background: #eee;
+  user-select: none;
+  .scroll-bar-horizontal {
+    position: absolute;
+    bottom: 2px;
+    height: 14px;
+    padding: 0 2px;
+    > div {
+      width: 100%;
+      height: 14px;
+    }
+  }
+}
+.vertical-container {
+  user-select: none;
+  position: absolute;
+  width: 18px;
+  top: 0;
+  right: 0;
+  background: #eee;
+  .scroll-bar-vertical {
+    position: absolute;
+    right: 2px;
+    width: 14px;
+    padding: 2px 0;
+    > div {
+      width: 14px;
+      height: 100%;
+    }
+  }
 }
 </style>

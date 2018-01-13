@@ -122,10 +122,14 @@ export default {
             this.save()
             const eX = e.clientX - this.canvasX
             const eY = e.clientY - this.canvasY
+            for (const item of this.imageObjs) {
+                item.focus = false
+            }
             const { image, rowDivide, cellDivide, table, focus, rowMove, cellMove, row, cell, all } = this.mouse
             if (image.hover) {
                 image.down = true
-                for (const item of this.imageObjs) {
+                for (let i = this.imageObjs.length - 1; i >= 0; i -= 1) {
+                    const item = this.imageObjs[i]
                     if (item.point && utils.isInRegion([eX, eY], [item.point[0][0], item.point[0][1]], [item.point[2][0], item.point[2][1]])) {
                         image.obj = {
                             x: eX,
@@ -193,11 +197,6 @@ export default {
                 this.selectArea.rowCount = Infinity
                 this.selectArea.cellCount = Infinity
                 this.$emit('focus', this.allRows[0].rowData)
-            }
-            if (!image.hover) {
-                for (const item of this.imageObjs) {
-                    item.focus = false
-                }
             }
             requestAnimationFrame(this.painted)
         },
@@ -293,9 +292,9 @@ export default {
             } else if (table.down) {
                 this.doSelectArea(eX, eY)
             } else if (rowMove.down) {
-
+                // TODO
             } else if (cellMove.down) {
-
+                // TODO
             } else if (row.down) {
                 const rowItem = this.getRowAt(eY)
                 if (rowItem) {
@@ -373,7 +372,7 @@ export default {
                     this.setCursor('row-resize')
                     this.mouse.rowDivide.hover = true
                     this.mouse.rowDivide.obj = { y: row.realY + row.height, row, minY: row.realY }
-                } else if (this.selectArea && this.selectArea.cellCount === Infinity && eY > this.selectArea.y && eY < this.selectArea.y + this.selectArea.height) {
+                } else if (this.selectArea && this.selectArea.cellCount === Infinity && this.selectArea.rowCount !== Infinity && eY > this.selectArea.y && eY < this.selectArea.y + this.selectArea.height) {
                     this.setCursor('-webkit-grab')
                     this.mouse.rowMove.hover = true
                 } else {
@@ -386,7 +385,7 @@ export default {
                     this.setCursor('col-resize')
                     this.mouse.cellDivide.hover = true
                     this.mouse.cellDivide.obj = { x: column.realX + column.width, column, minX: column.realX }
-                } else if (this.selectArea && this.selectArea.rowCount === Infinity && eX > this.selectArea.x && eX < this.selectArea.x + this.selectArea.width) {
+                } else if (this.selectArea && this.selectArea.rowCount === Infinity && this.selectArea.cellCount !== Infinity && eX > this.selectArea.x && eX < this.selectArea.x + this.selectArea.width) {
                     this.setCursor('-webkit-grab')
                     this.mouse.cellMove.hover = true
                 } else {
@@ -509,21 +508,21 @@ export default {
                 this.menuPosition.top = `${this.canvasHeight - menuObj[0].offsetHeight}px`
             }
 
-            if (eX < config.width.serial && eY > config.height.columns) {
+            if (this.mouse.rowMove.hover) {
                 const row = this.getRowAt(eY)
                 if (row) {
                     this.setRowheight = row.height
                     this.contextRow = { ...row }
                     this.leftClick = true
                 }
-            } else if (eX > config.width.serial && eY < config.height.columns) {
+            } else if (this.mouse.cellMove.hover) {
                 const column = this.getColumnAt(eX)
                 if (column) {
                     this.setCellWidth = column.width
                     this.contextCell = { ...column }
                     this.topClick = true
                 }
-            } else if (eX < config.width.serial && eY < config.height.columns) {
+            } else if (this.mouse.all.hover) {
                 this.cornerClick = true
             }
             this.showMenu = true
@@ -563,25 +562,30 @@ export default {
                     e.preventDefault()
                     this.moveFocus('right')
                 } else if (e.keyCode === 8 || e.keyCode === 46) { // del/delete
-                    if (this.selectArea) {
-                        const selectCells = this.getCellsBySelect(this.selectArea)
-                        const deleteData = []
-                        for (const row of selectCells) {
-                            const temp = []
-                            for (const item of row) {
-                                temp.push({
-                                    anchor: [item.row, item.cell],
-                                    value: '',
-                                })
+                    const index = this.imageObjs.findIndex(item => item.focus)
+                    this.imageObjs.splice(index, 1)
+                    requestAnimationFrame(this.paintedImage)
+                    if (index === -1) {
+                        if (this.selectArea) {
+                            const selectCells = this.getCellsBySelect(this.selectArea)
+                            const deleteData = []
+                            for (const row of selectCells) {
+                                const temp = []
+                                for (const item of row) {
+                                    temp.push({
+                                        anchor: [item.row, item.cell],
+                                        value: '',
+                                    })
+                                }
+                                deleteData.push(temp)
                             }
-                            deleteData.push(temp)
+                            this.$emit('updateItems', deleteData)
+                        } else {
+                            this.$emit('updateItem', {
+                                anchor: [...this.focusCell],
+                                value: '',
+                            })
                         }
-                        this.$emit('updateItems', deleteData)
-                    } else {
-                        this.$emit('updateItem', {
-                            anchor: [...this.focusCell],
-                            value: '',
-                        })
                     }
                 } else if (/macintosh|mac os x/i.test(navigator.userAgent)) {
                     if (e.keyCode === 90 && e.metaKey) {
@@ -608,15 +612,25 @@ export default {
                 }
             }
             if (e.keyCode === 13) { // enter
-                if (!this.fxFocus) {
+                if (this.rowHeightDialog) {
+                    this.setHeight()
+                } else if (this.cellWidthDialog) {
+                    this.setWidth()
+                } else if (!this.fxFocus) {
                     this.save()
                     this.moveFocus('down')
                 }
             } else if (e.keyCode === 27) { // esc
-                this.hideInput()
-                this.$refs.input.innerHTML = ''
+                if (this.rowHeightDialog) {
+                    this.rowHeightDialog = false
+                } else if (this.cellWidthDialog) {
+                    this.cellWidthDialog = false
+                } else {
+                    this.hideInput()
+                    this.$refs.input.innerHTML = ''
+                }
             } else if (e.keyCode === 9) { // tab
-                if (!this.fxFocus) {
+                if (!this.fxFocus && !this.rowHeightDialog && !this.cellWidthDialog) {
                     this.save()
                     this.moveFocus('right')
                 }

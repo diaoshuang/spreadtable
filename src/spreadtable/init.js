@@ -81,6 +81,7 @@ export default {
                 config.width.serial * ratio,
                 this.canvasHeight * ratio,
             ]
+            this.resetScrollBar(this.canvasWidth, this.canvasHeight, this.bodyWidth, this.bodyHeight)
         },
         initCanvas() {
             const canvas = this.$refs.canvas
