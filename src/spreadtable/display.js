@@ -12,9 +12,7 @@ export default {
     },
     methods: {
         getDisplayItems() {
-            // const time = Date.now()
             const displayColumns = this.getDisplayColumns()
-            // console.log(Date.now() - time)
             const displayRows = this.getDisplayRows()
             const displayCells = this.getDisplayCells(displayRows, displayColumns)
             if (this.selectArea) {

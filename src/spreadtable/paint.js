@@ -34,16 +34,9 @@ export default {
             }
         },
         painted() {
-            // const time = Date.now()
-            // const items = this.getDisplayItems()
             this.beforePainted()
             this.clearPainted()
             this.doDraw()
-            // if (Date.now() - time >= 5) {
-            //     console.warn(`渲染耗时：${Date.now() - time}ms`)
-            // } else {
-            //     console.log(`渲染耗时：${Date.now() - time}ms`)
-            // }
         },
         paintedImage() {
             const { canvasPlugin, canvasWidth, canvasHeight, imageObjs } = this

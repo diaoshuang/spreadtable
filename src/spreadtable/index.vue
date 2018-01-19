@@ -214,7 +214,6 @@ export default {
                     }
                     table.appendChild(tr)
                 }
-                console.log(table)
                 this.$refs.inputSelect.appendChild(table)
             }
         },
