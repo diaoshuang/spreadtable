@@ -192,7 +192,8 @@ export default {
             this.$refs.input.innerHTML = ''
             this.focusInput()
             if (!this.selectArea) {
-                this.$refs.inputSelect.innerHTML = this.getCell(this.focusCell).text
+                const text = document.createTextNode(this.getCell(this.focusCell).text)
+                this.$refs.inputSelect.appendChild(text)
             }
         },
         selectArea(value) {
@@ -200,18 +201,21 @@ export default {
             this.$refs.input.innerHTML = ''
             this.focusInput()
             if (value) {
+                this.$refs.inputSelect.innerHTML = ''
                 const selectCells = this.getCellsBySelect(this.selectArea)
-                let copyText = '<table>'
+
+                const table = document.createElement('table')
                 for (const row of selectCells) {
-                    let temp = '<tr>'
+                    const tr = document.createElement('tr')
                     for (const cell of row) {
-                        temp += `<td>${cell.text}</td>`
+                        const td = document.createElement('td')
+                        td.innerHTML = cell.text
+                        tr.appendChild(td)
                     }
-                    temp += '</tr>'
-                    copyText += temp
+                    table.appendChild(tr)
                 }
-                copyText += '</table>'
-                this.$refs.inputSelect.innerHTML = copyText
+                console.log(table)
+                this.$refs.inputSelect.appendChild(table)
             }
         },
         rowHeightDialog(value) {
@@ -396,8 +400,10 @@ export default {
         doSelectArea(eX, eY) {
             const { width, height, row, cell: cellIndex, realX: x, realY: y } = this.getFocusCell(this.focusCell)
             if (eX >= x && eX <= x + width && eY >= y && eY <= y + height) {
-                this.selectArea = null
-                requestAnimationFrame(this.painted)
+                if (this.selectArea !== null) {
+                    this.selectArea = null
+                    requestAnimationFrame(this.painted)
+                }
             } else {
                 if (eX < config.width.serial) {
                     eX = config.width.serial
@@ -413,18 +419,23 @@ export default {
                 }
                 const cell = this.getCellAt(eX, eY)
                 if (cell) {
+                    let temp = null
                     if (cell.realX >= x && cell.realY >= y) {
-                        this.selectArea = { type: 0, x, y, width: (cell.realX - x) + cell.width, height: (cell.realY - y) + cell.height, cell: cellIndex, row, offset: [...this.offset] }
+                        temp = { type: 0, x, y, width: (cell.realX - x) + cell.width, height: (cell.realY - y) + cell.height, cell: cellIndex, row, offset: [...this.offset] }
                     } else if (cell.realX >= x && cell.realY <= y) {
-                        this.selectArea = { type: 1, x, y: cell.realY, width: (cell.realX - x) + cell.width, height: (y - cell.realY) + height, row: cell.row, cell: cellIndex, offset: [...this.offset] }
+                        temp = { type: 1, x, y: cell.realY, width: (cell.realX - x) + cell.width, height: (y - cell.realY) + height, row: cell.row, cell: cellIndex, offset: [...this.offset] }
                     } else if (cell.realX <= x && cell.realY <= y) {
-                        this.selectArea = { type: 2, x: cell.realX, y: cell.realY, width: (x - cell.realX) + width, height: (y - cell.realY) + height, row: cell.row, cell: cell.cell, offset: [...this.offset] }
+                        temp = { type: 2, x: cell.realX, y: cell.realY, width: (x - cell.realX) + width, height: (y - cell.realY) + height, row: cell.row, cell: cell.cell, offset: [...this.offset] }
                     } else if (cell.realX <= x && cell.realY >= y) {
-                        this.selectArea = { type: 3, x: cell.realX, y, width: (x - cell.realX) + width, height: (cell.realY - y) + cell.height, row, cell: cell.cell, offset: [...this.offset] }
+                        temp = { type: 3, x: cell.realX, y, width: (x - cell.realX) + width, height: (cell.realY - y) + cell.height, row, cell: cell.cell, offset: [...this.offset] }
                     }
-                    this.selectArea.rowCount = Math.abs(cell.row - row) + 1
-                    this.selectArea.cellCount = Math.abs(cell.cell - cellIndex) + 1
-                    requestAnimationFrame(this.painted)
+                    temp.rowCount = Math.abs(cell.row - row) + 1
+                    temp.cellCount = Math.abs(cell.cell - cellIndex) + 1
+
+                    if (!this.selectArea || !utils.compareObj(this.selectArea, temp)) {
+                        this.selectArea = temp
+                        requestAnimationFrame(this.painted)
+                    }
                 }
             }
         },
