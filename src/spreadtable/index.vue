@@ -44,58 +44,61 @@
                 </div>
             </div>
         </div>
-        <div v-if="!loading" class="spreadtable-main">
-            <div class="input-content" :style="inputStyles" ref="input" contenteditable="true" @input="setValueTemp" @keydown.tab.prevent @keydown.enter.prevent @keydown.esc.prevent></div>
-            <div class="input-content" ref="inputSelect" contenteditable="true" @keydown.prevent></div>
-            <canvas v-if="hasSize" ref="canvas" class="canvas-spreadtable" :width="canvasWidth*ratio" :height="canvasHeight*ratio" :style="`width:${canvasWidth}px;height:${canvasHeight}px;`"></canvas>
-            <canvas v-if="hasSize" ref="canvas-plugin" class="canvas-plugin" :width="canvasWidth*ratio" :height="canvasHeight*ratio" :style="`width:${canvasWidth}px;height:${canvasHeight}px;`"></canvas>
-            <div class="horizontal-container" style="width:20px" @click="scroll($event,0)">
-                <div class="scroll-bar-horizontal" ref="horizontal" @mousedown="dragMove($event,0)" :style="{width:horizontalBar.size+'px',left:horizontalBar.x+'px'}">
-                    <div :style="horizontalBar.move?'background-color:#a1a1a1;':'background-color:#c1c1c1;'"></div>
+        <<<<<<< HEAD <div v-if="!loading" class="spreadtable-main">
+            =======
+            <div class="spreadtable-main" :style="`height:${canvasHeight+20}px;`">
+                >>>>>>> 03bab55fdeb573f6deee801e8d514379cfafd30d
+                <div class="input-content" :style="inputStyles" ref="input" contenteditable="true" @input="setValueTemp" @keydown.tab.prevent @keydown.enter.prevent @keydown.esc.prevent></div>
+                <div class="input-content" ref="inputSelect" contenteditable="true" @keydown.prevent></div>
+                <canvas v-if="hasSize" ref="canvas" class="canvas-spreadtable" :width="canvasWidth*ratio" :height="canvasHeight*ratio" :style="`width:${canvasWidth}px;height:${canvasHeight}px;`"></canvas>
+                <canvas v-if="hasSize" ref="canvas-plugin" class="canvas-plugin" :width="canvasWidth*ratio" :height="canvasHeight*ratio" :style="`width:${canvasWidth}px;height:${canvasHeight}px;`"></canvas>
+                <div class="horizontal-container" :style="`width:${canvasWidth}px;`" @click="scroll($event,0)">
+                    <div class="scroll-bar-horizontal" ref="horizontal" @mousedown="dragMove($event,0)" :style="{width:horizontalBar.size+'px',left:horizontalBar.x+'px'}">
+                        <div :style="horizontalBar.move?'background-color:#a1a1a1;':'background-color:#c1c1c1;'"></div>
+                    </div>
+                </div>
+                <div class="vertical-container" :style="`height:${canvasHeight}px;`" @click="scroll($event,1)">
+                    <div class="scroll-bar-vertical" ref="horizontal" @mousedown="dragMove($event,1)" :style="{height:verticalBar.size+'px',top:verticalBar.y+'px'}">
+                        <div :style="verticalBar.move?'background-color:#a1a1a1;':'background-color:#c1c1c1;'"></div>
+                    </div>
                 </div>
             </div>
-            <div class="vertical-container" style="height:20px" @click="scroll($event,1)">
-                <div class="scroll-bar-vertical" ref="horizontal" @mousedown="dragMove($event,1)" :style="{height:verticalBar.size+'px',top:verticalBar.y+'px'}">
-                    <div :style="verticalBar.move?'background-color:#a1a1a1;':'background-color:#c1c1c1;'"></div>
+            <div v-else>
+                正在加载数据...
+            </div>
+            <div class="sheet">sheet</div>
+            <div v-show="showMenu" class="right-menu" :style="{ top:menuPosition.top,left:menuPosition.left }">
+                <div class="right-menu" :style="menuPosition">
+                    <ul>
+                        <li v-if="cornerClick" @click="setWidthHeight">设置宽度和高度</li>
+                        <li v-if="topClick" @click="cellWidthDialog=true">列宽</li>
+                        <li v-if="leftClick" @click="rowHeightDialog=true">行高</li>
+                        <li>自定义菜单</li>
+                        <li>自定义菜单</li>
+                        <li>自定义菜单</li>
+                        <li>自定义菜单</li>
+                        <li>自定义菜单</li>
+                    </ul>
                 </div>
             </div>
-        </div>
-        <div v-else>
-            正在加载数据...
-        </div>
-        <div class="sheet">sheet</div>
-        <div v-show="showMenu" class="right-menu" :style="{ top:menuPosition.top,left:menuPosition.left }">
-            <div class="right-menu" :style="menuPosition">
-                <ul>
-                    <li v-if="cornerClick" @click="setWidthHeight">设置宽度和高度</li>
-                    <li v-if="topClick" @click="cellWidthDialog=true">列宽</li>
-                    <li v-if="leftClick" @click="rowHeightDialog=true">行高</li>
-                    <li>自定义菜单</li>
-                    <li>自定义菜单</li>
-                    <li>自定义菜单</li>
-                    <li>自定义菜单</li>
-                    <li>自定义菜单</li>
-                </ul>
-            </div>
-        </div>
-        <modal v-if="rowHeightDialog" @close="rowHeightDialog = false" @submit="setHeight">
-            <div slot="header">
-                行高
-            </div>
-            <div slot="body">
-                <label class="input-label">行高</label>
-                <input ref="setHeightInput" type="text" v-model="setRowheight">
-            </div>
-        </modal>
-        <modal v-if="cellWidthDialog" @close="cellWidthDialog = false" @submit="setWidth">
-            <div slot="header">
-                列宽
-            </div>
-            <div slot="body">
-                <label class="input-label">列宽</label>
-                <input ref="setWidthInput" type="text" v-model="setCellWidth">
-            </div>
-        </modal>
+            <modal v-if="rowHeightDialog" @close="rowHeightDialog = false" @submit="setHeight">
+                <div slot="header">
+                    行高
+                </div>
+                <div slot="body">
+                    <label class="input-label">行高</label>
+                    <input ref="setHeightInput" type="text" v-model="setRowheight" @keydown.tab.prevent @keydown.enter.prevent @keydown.esc.prevent>
+                </div>
+            </modal>
+            <modal v-if="cellWidthDialog" @close="cellWidthDialog = false" @submit="setWidth">
+                <div slot="header">
+                    列宽
+                </div>
+                <div slot="body">
+                    <label class="input-label">列宽</label>
+                    <input ref="setWidthInput" type="text" v-model="setCellWidth" @keydown.tab.prevent @keydown.enter.prevent @keydown.esc.prevent>
+                </div>
+            </modal>
     </div>
 </template>
 
@@ -195,7 +198,8 @@ export default {
             this.$refs.input.innerHTML = ''
             this.focusInput()
             if (!this.selectArea) {
-                this.$refs.inputSelect.innerHTML = this.getCell(this.focusCell).text
+                const text = document.createTextNode(this.getCell(this.focusCell).text)
+                this.$refs.inputSelect.appendChild(text)
             }
         },
         selectArea(value) {
@@ -203,20 +207,20 @@ export default {
             this.$refs.input.innerHTML = ''
             this.focusInput()
             if (value) {
+                this.$refs.inputSelect.innerHTML = ''
                 const selectCells = this.getCellsBySelect(this.selectArea)
-                let copyText = '<table>'
+
+                const table = document.createElement('table')
                 for (const row of selectCells) {
-                    let temp = '<tr>'
+                    const tr = document.createElement('tr')
                     for (const cell of row) {
-                        temp += `<td>${cell.text}</td>`
+                        const td = document.createElement('td')
+                        td.innerHTML = cell.text
+                        tr.appendChild(td)
                     }
-                    temp += '</tr>'
-                    copyText += temp
+                    table.appendChild(tr)
                 }
-                copyText += '</table>'
-                // this.$refs.inputSelect.innerHTML = copyText
-                var text=document.createTextNode("copyText");
-                this.$refs.inputSelect.appendChild(text);
+                this.$refs.inputSelect.appendChild(table)
             }
         },
         rowHeightDialog(value) {
@@ -405,8 +409,10 @@ export default {
         doSelectArea(eX, eY) {
             const { width, height, row, cell: cellIndex, realX: x, realY: y } = this.getFocusCell(this.focusCell)
             if (eX >= x && eX <= x + width && eY >= y && eY <= y + height) {
-                this.selectArea = null
-                requestAnimationFrame(this.painted)
+                if (this.selectArea !== null) {
+                    this.selectArea = null
+                    requestAnimationFrame(this.painted)
+                }
             } else {
                 if (eX < config.width.serial) {
                     eX = config.width.serial
@@ -422,18 +428,23 @@ export default {
                 }
                 const cell = this.getCellAt(eX, eY)
                 if (cell) {
+                    let temp = null
                     if (cell.realX >= x && cell.realY >= y) {
-                        this.selectArea = { type: 0, x, y, width: (cell.realX - x) + cell.width, height: (cell.realY - y) + cell.height, cell: cellIndex, row, offset: [...this.offset] }
+                        temp = { type: 0, x, y, width: (cell.realX - x) + cell.width, height: (cell.realY - y) + cell.height, cell: cellIndex, row, offset: [...this.offset] }
                     } else if (cell.realX >= x && cell.realY <= y) {
-                        this.selectArea = { type: 1, x, y: cell.realY, width: (cell.realX - x) + cell.width, height: (y - cell.realY) + height, row: cell.row, cell: cellIndex, offset: [...this.offset] }
+                        temp = { type: 1, x, y: cell.realY, width: (cell.realX - x) + cell.width, height: (y - cell.realY) + height, row: cell.row, cell: cellIndex, offset: [...this.offset] }
                     } else if (cell.realX <= x && cell.realY <= y) {
-                        this.selectArea = { type: 2, x: cell.realX, y: cell.realY, width: (x - cell.realX) + width, height: (y - cell.realY) + height, row: cell.row, cell: cell.cell, offset: [...this.offset] }
+                        temp = { type: 2, x: cell.realX, y: cell.realY, width: (x - cell.realX) + width, height: (y - cell.realY) + height, row: cell.row, cell: cell.cell, offset: [...this.offset] }
                     } else if (cell.realX <= x && cell.realY >= y) {
-                        this.selectArea = { type: 3, x: cell.realX, y, width: (x - cell.realX) + width, height: (cell.realY - y) + cell.height, row, cell: cell.cell, offset: [...this.offset] }
+                        temp = { type: 3, x: cell.realX, y, width: (x - cell.realX) + width, height: (cell.realY - y) + cell.height, row, cell: cell.cell, offset: [...this.offset] }
                     }
-                    this.selectArea.rowCount = Math.abs(cell.row - row) + 1
-                    this.selectArea.cellCount = Math.abs(cell.cell - cellIndex) + 1
-                    requestAnimationFrame(this.painted)
+                    temp.rowCount = Math.abs(cell.row - row) + 1
+                    temp.cellCount = Math.abs(cell.cell - cellIndex) + 1
+
+                    if (!this.selectArea || !utils.compareObj(this.selectArea, temp)) {
+                        this.selectArea = temp
+                        requestAnimationFrame(this.painted)
+                    }
                 }
             }
         },
@@ -441,19 +452,24 @@ export default {
             this.valueTemp = e.target.innerText
             const focusCellItem = this.getFocusCell(this.focusCell)
             const { width, height, row, cell } = focusCellItem
-            let { x, y } = focusCellItem
+            let { realX: x, realY: y } = focusCellItem
             if (x < config.width.serial) {
-                this.offset.x += config.width.serial - x
+                this.offset[0] += config.width.serial - x
                 x = config.width.serial
+
+                requestAnimationFrame(this.painted)
             }
             if (y < config.height.columns) {
-                this.offset.y += config.height.columns - y
+                this.offset[1] += config.height.columns - y
                 y = config.height.columns
+                requestAnimationFrame(this.painted)
             }
 
             if (!this.isPaste) {
                 // 正常键盘录入
-                this.showInput(x, y, width, height)
+                if (!this.isEditing) {
+                    this.showInput(x, y, width, height)
+                }
             } else if (!this.isEditing) {
                 this.isPaste = false
                 const objE = document.createElement('div')
@@ -653,8 +669,6 @@ export default {
             this.isPaste = true
         },
         addImg() {
-            this.imageObjs.sort((a, b) => b.sort - a.sort)
-
             this.imageObjs.push({
                 id: Date.now(),
                 url: 'http://www.baidu.com/img/bd_logo1.png',
@@ -664,11 +678,11 @@ export default {
                 hover: false,
                 sort: this.imageObjs.length > 0 ? this.imageObjs[this.imageObjs.length - 1].sort + 1 : 0,
             })
-            this.imageObjs.sort((a, b) => b.sort - a.sort)
-            let index = this.imageObjs.length - 1
+
+            let index = 0
             for (const item of this.imageObjs) {
                 item.sort = index
-                index -= 1
+                index += 1
             }
             requestAnimationFrame(this.painted)
         },
@@ -711,17 +725,29 @@ export default {
 </script>
 
 <style lang="scss">
+* {
+  font-family: "PingFang SC", "Lantinghei SC", "Microsoft YaHei", "HanHei SC",
+    "Helvetica Neue", "Open Sans", Arial, "Hiragino Sans GB", "微软雅黑",
+    "STHeiti", "WenQuanYi Micro Hei", SimSun, sans-serif;
+}
 .spreadtable {
   display: inline-block;
   overflow: hidden;
   margin: 0;
   padding: 0;
   .spreadtable-main {
+    border-bottom: 1px solid#ddd;
     position: relative;
     canvas {
       border: 1px solid #bdbbbc;
       user-select: none;
       position: absolute;
+    }
+    .canvas-spreadtable {
+      z-index: 90;
+    }
+    .canvas-plugin {
+      z-index: 100;
     }
     .input-content {
       top: -10000px;
@@ -732,7 +758,7 @@ export default {
       font-size: 12px;
       position: fixed;
       background-color: #fff;
-      z-index: 10;
+      z-index: 95;
       line-height: 19px;
     }
   }
@@ -741,6 +767,7 @@ export default {
     width: 130px;
     border: 1px solid #ccc;
     background-color: #fff;
+    z-index: 10000;
     box-shadow: 2px 2px 3px #ddd;
     ul {
       margin: 0;
@@ -879,5 +906,41 @@ export default {
 .input-label {
   font-size: 13px;
   margin-right: 20px;
+}
+.horizontal-container {
+  position: absolute;
+  height: 18px;
+  left: 0;
+  bottom: 0;
+  background: #eee;
+  user-select: none;
+  .scroll-bar-horizontal {
+    position: absolute;
+    bottom: 2px;
+    height: 14px;
+    padding: 0 2px;
+    > div {
+      width: 100%;
+      height: 14px;
+    }
+  }
+}
+.vertical-container {
+  user-select: none;
+  position: absolute;
+  width: 18px;
+  top: 0;
+  right: 0;
+  background: #eee;
+  .scroll-bar-vertical {
+    position: absolute;
+    right: 2px;
+    width: 14px;
+    padding: 2px 0;
+    > div {
+      width: 14px;
+      height: 100%;
+    }
+  }
 }
 </style>

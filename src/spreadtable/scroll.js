@@ -19,50 +19,9 @@ export default {
     },
     created() {
         this.$on('scroll', () => {
-            this.horizontalBar.x = -parseInt(this.offset.x * this.horizontalBar.k, 10)
-            this.verticalBar.y = -parseInt(this.offset.y * this.verticalBar.k, 10)
+            this.horizontalBar.x = -parseInt(this.offset[0] * this.horizontalBar.k, 10)
+            this.verticalBar.y = -parseInt(this.offset[1] * this.verticalBar.k, 10)
         })
-    },
-    mounted() {
-        // document.addEventListener('mouseup', () => {
-        //     this.horizontalBar.move = false
-        //     this.verticalBar.move = false
-        // })
-        // document.addEventListener('mousemove', (e) => {
-        //     if (this.verticalBar.move) {
-        //         const height = this.maxPoint.y - this.verticalBar.size
-        //         const moveHeight = this.verticalBar.y + (e.screenY - this.verticalBar.cursorY)
-        //         if (moveHeight > 0 && moveHeight < height) {
-        //             this.verticalBar.y += e.screenY - this.verticalBar.cursorY
-        //         } else if (moveHeight <= 0) {
-        //             this.verticalBar.y = 0
-        //         } else {
-        //             this.verticalBar.y = height
-        //         }
-        //         this.verticalBar.cursorY = e.screenY
-        //         this.offset.y = -this.verticalBar.y / this.verticalBar.k
-        //         requestAnimationFrame(this.rePainted)
-        //     }
-        //     if (this.horizontalBar.move) {
-        //         let width = 0
-        //         if (this.fillWidth > 0) {
-        //             width = this.maxPoint.x - this.horizontalBar.size
-        //         } else {
-        //             width = (this.maxPoint.x + this.fixedWidth) - this.horizontalBar.size
-        //         }
-        //         const moveWidth = this.horizontalBar.x + (e.screenX - this.horizontalBar.cursorX)
-        //         if (moveWidth > 0 && moveWidth < width) {
-        //             this.horizontalBar.x += e.screenX - this.horizontalBar.cursorX
-        //         } else if (moveWidth <= 0) {
-        //             this.horizontalBar.x = 0
-        //         } else {
-        //             this.horizontalBar.x = width
-        //         }
-        //         this.horizontalBar.cursorX = e.screenX
-        //         this.offset.x = -this.horizontalBar.x / this.horizontalBar.k
-        //         requestAnimationFrame(this.rePainted)
-        //     }
-        // })
     },
     methods: {
         scroll(e, type) {
@@ -73,7 +32,7 @@ export default {
                         k = this.verticalBar.y - e.offsetY
                     }
                     this.verticalBar.y -= k
-                    this.offset.y = -this.verticalBar.y / this.verticalBar.k
+                    this.offset[1] = -this.verticalBar.y / this.verticalBar.k
                     requestAnimationFrame(this.painted)
                 } else if (e.offsetY > this.verticalBar.y + this.verticalBar.size) {
                     let k = 15
@@ -81,8 +40,8 @@ export default {
                         k = e.offsetY - this.verticalBar.y - this.verticalBar.size
                     }
                     this.verticalBar.y += k
-                    this.offset.y = -this.verticalBar.y / this.verticalBar.k
-                    requestAnimationFrame(this.rePainted)
+                    this.offset[1] = -this.verticalBar.y / this.verticalBar.k
+                    requestAnimationFrame(this.painted)
                 }
             }
             if (type === 0 && this.horizontalBar.size) {
@@ -92,8 +51,8 @@ export default {
                         k = this.horizontalBar.x - e.offsetX
                     }
                     this.horizontalBar.x -= k
-                    this.offset.x = -this.horizontalBar.x / this.horizontalBar.k
-                    requestAnimationFrame(this.rePainted)
+                    this.offset[0] = -this.horizontalBar.x / this.horizontalBar.k
+                    requestAnimationFrame(this.painted)
                 } else if (e.offsetX > this.horizontalBar.x + this.horizontalBar.size) {
                     let k = 15
                     if (e.offsetX - this.horizontalBar.x - this.horizontalBar.size < 15) {
@@ -101,8 +60,8 @@ export default {
                     }
                     this.horizontalBar.x += k
                     this.horizontalBar.x += 15
-                    this.offset.x = -this.horizontalBar.x / this.horizontalBar.k
-                    requestAnimationFrame(this.rePainted)
+                    this.offset[0] = -this.horizontalBar.x / this.horizontalBar.k
+                    requestAnimationFrame(this.painted)
                 }
             }
         },
@@ -115,44 +74,37 @@ export default {
                 this.horizontalBar.cursorX = e.screenX
             }
         },
-        resetScrollBar({ x, y }, bodyWidth, bodyHeight, fixedWidth) {
-            let width = 0
-            if (this.fillWidth > 0) {
-                width = x
-            } else {
-                width = x + fixedWidth
-            }
-
-            const horizontalRatio = width / bodyWidth
+        resetScrollBar(canvasWidth, canvasHeight, bodyWidth, bodyHeight) {
+            const horizontalRatio = canvasWidth / bodyWidth
             if (horizontalRatio >= 1) {
                 this.horizontalBar.size = 0
             } else {
-                this.horizontalBar.size = width - ((bodyWidth - width) * horizontalRatio)
+                this.horizontalBar.size = canvasWidth - ((bodyWidth - canvasWidth) * horizontalRatio)
             }
             this.horizontalBar.k = horizontalRatio
 
-            let verticalRatio = y / bodyHeight
+            let verticalRatio = canvasHeight / bodyHeight
             if (verticalRatio > 1) {
                 this.verticalBar.size = 0
             } else {
-                this.verticalBar.size = y - ((bodyHeight - y) * verticalRatio)
+                this.verticalBar.size = canvasHeight - ((bodyHeight - canvasHeight) * verticalRatio)
                 if (this.verticalBar.size < 30) {
                     this.verticalBar.size = 30
-                    verticalRatio = (y - 30) / (bodyHeight - y)
+                    verticalRatio = (canvasHeight - 30) / (bodyHeight - canvasHeight)
                 }
             }
             this.verticalBar.k = verticalRatio
 
-            if (width - this.horizontalBar.size < -this.offset.x * this.horizontalBar.k) {
-                this.offset.x = width - this.bodyWidth
+            if (canvasWidth - this.horizontalBar.size < -this.offset[0] * this.horizontalBar.k) {
+                this.offset[0] = canvasWidth - this.bodyWidth
             }
             if (this.verticalBar.k > 1) {
-                this.offset.y = 0
-            } else if (this.maxPoint.y - this.verticalBar.size < -this.offset.y * this.verticalBar.k) {
-                this.offset.y = this.maxPoint.y - this.bodyHeight
+                this.offset[1] = 0
+            } else if (canvasHeight - this.verticalBar.size < -this.offset[1] * this.verticalBar.k) {
+                this.offset[1] = canvasHeight - this.bodyHeight
             }
-            this.horizontalBar.x = -this.offset.x * this.horizontalBar.k
-            this.verticalBar.y = -this.offset.y * this.verticalBar.k
+            this.horizontalBar.x = -this.offset[0] * this.horizontalBar.k
+            this.verticalBar.y = -this.offset[1] * this.verticalBar.k
         },
     },
 }

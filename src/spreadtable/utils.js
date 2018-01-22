@@ -133,6 +133,23 @@ const utils = {
             Math.sin(A) * R,
         ]
     },
+    compareObj(a, b) {
+        const aProps = Object.keys(a)
+        const bProps = Object.keys(b)
+        if (aProps.length !== bProps.length) {
+            return false
+        }
+        for (let i = 0; i < aProps.length; i += 1) {
+            const propName = aProps[i]
+            if (a[propName] instanceof Array && b[propName] instanceof Array) {
+                continue
+            }
+            if (a[propName] !== b[propName]) {
+                return false
+            }
+        }
+        return true
+    },
 }
 
 export default utils
