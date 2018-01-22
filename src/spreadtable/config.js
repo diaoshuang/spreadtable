@@ -21,8 +21,4 @@ export default {
         bottom: 40,
         sheet: 30,
     },
-    getHeaderHeight() {
-        const { nav, fx, toolbar, sheet } = this.height
-        return nav + fx + toolbar + sheet + 20
-    },
 }

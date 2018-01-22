@@ -1,8 +1,17 @@
+import Vue from 'vue'
 import config from './config'
+import VueWorker from 'vue-worker'
+
+Vue.use(VueWorker)
 
 export default {
+    data() {
+        return {
+            loading: false,
+        }
+    },
     methods: {
-        initData(dataSource) {
+        initData1(dataSource) {
             const data = []
             const allRows = []
             const allCells = []
@@ -13,7 +22,7 @@ export default {
                 console.log(dataSource)
             } else {
                 let startY = config.height.columns
-                for (let i = 0; i < 500; i += 1) {
+                for (let i = 0; i < 5000; i += 1) {
                     const temp = []
                     const cellTemp = []
                     let startX = config.width.serial
@@ -63,12 +72,96 @@ export default {
             this.allCells = allCells
             return data
         },
+        initData(dataSource) {
+            this.loading = true
+            return this.$worker.run((dataSource, config, words) => {
+                console.log(dataSource, config, words)
+                const data = []
+                const allRows = []
+                const allCells = []
+                const allColumns = []
+                let bodyWidth = 0
+                let bodyHeight = 0
+                if (dataSource && dataSource.length > 0) {
+                    console.log(dataSource)
+                } else {
+                    let startY = config.height.columns
+                    for (let i = 0; i < 100000; i += 1) {
+                        const temp = []
+                        const cellTemp = []
+                        let startX = config.width.serial
+                        for (let j = 0; j < words.length; j += 1) {
+                            temp.push('')
+                            cellTemp.push({
+                                cell: j,
+                                row: i,
+                                text: '',
+                                font: '',
+                                paintText: '',
+                                type: 'text',
+                                style: '',
+                                x: startX,
+                                y: startY,
+                                width: config.width.cell,
+                                height: config.height.row,
+                            })
+                            if (i === 0) {
+                                bodyWidth += config.width.cell
+                                allColumns.push({
+                                    width: config.width.cell,
+                                    title: words[j],
+                                    cell: j,
+                                    hidden: false,
+                                    height: config.height.columns,
+                                    x: startX,
+                                })
+                            }
+                            startX += config.width.cell
+                        }
+                        allRows.push({
+                            row: i,
+                            height: config.height.row,
+                            style: '',
+                            rowData: temp,
+                            y: startY,
+                        })
+                        startY += config.height.row
+                        bodyHeight += config.height.row
+                        allCells.push(cellTemp)
+                        data.push(temp)
+                    }
+                }
+                return {
+                    data,
+                    allRows,
+                    allCells,
+                    allColumns,
+                    bodyWidth,
+                    bodyHeight,
+                }
+            }, [dataSource, config, this.words])
+                .then((result) => {
+                    const { bodyWidth, bodyHeight, allRows, allColumns, allCells, data } = result
+                    this.bodyWidth = bodyWidth
+                    this.bodyHeight = bodyHeight
+                    this.allRows = Object.freeze(allRows)
+                    this.allColumns = Object.freeze(allColumns)
+                    this.allCells = Object.freeze(allCells)
+                    this.data = Object.freeze(data)
+                    return true
+                })
+                .catch((e) => {
+                    console.error(e) //eslint-disable-line
+                })
+        },
         initSize() {
             const ratio = this.ratio
             const containerWidth = this.$refs.spreadtable.offsetWidth
             const containerHeight = this.$refs.spreadtable.offsetHeight
             this.canvasWidth = containerWidth - config.width.scroll
-            this.canvasHeight = containerHeight - config.getHeaderHeight() - config.width.scroll
+            const { nav, fx, toolbar, sheet } = config.height
+            const leftHeight = nav + fx + toolbar + sheet + 20
+            this.canvasHeight = containerHeight - leftHeight - config.width.scroll
             this.points.columns = [
                 0,
                 0,

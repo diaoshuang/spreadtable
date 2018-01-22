@@ -44,7 +44,7 @@ module.exports = {
         // "no-continue": 0,
         // "global-require": 0,
         // "import/no-dynamic-require": 0,
-        // "no-shadow": 0,
+        "no-shadow": 0,
         // "no-underscore-dangle": 0,
         // "linebreak-style": 0,
         // "linebreak-style": 0

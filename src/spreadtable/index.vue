@@ -44,7 +44,7 @@
                 </div>
             </div>
         </div>
-        <div class="spreadtable-main">
+        <div v-if="!loading" class="spreadtable-main">
             <div class="input-content" :style="inputStyles" ref="input" contenteditable="true" @input="setValueTemp" @keydown.tab.prevent @keydown.enter.prevent @keydown.esc.prevent></div>
             <div class="input-content" ref="inputSelect" contenteditable="true" @keydown.prevent></div>
             <canvas v-if="hasSize" ref="canvas" class="canvas-spreadtable" :width="canvasWidth*ratio" :height="canvasHeight*ratio" :style="`width:${canvasWidth}px;height:${canvasHeight}px;`"></canvas>
@@ -59,6 +59,9 @@
                     <div :style="verticalBar.move?'background-color:#a1a1a1;':'background-color:#c1c1c1;'"></div>
                 </div>
             </div>
+        </div>
+        <div v-else>
+            正在加载数据...
         </div>
         <div class="sheet">sheet</div>
         <div v-show="showMenu" class="right-menu" :style="{ top:menuPosition.top,left:menuPosition.left }">
@@ -211,7 +214,9 @@ export default {
                     copyText += temp
                 }
                 copyText += '</table>'
-                this.$refs.inputSelect.innerHTML = copyText
+                // this.$refs.inputSelect.innerHTML = copyText
+                var text=document.createTextNode("copyText");
+                this.$refs.inputSelect.appendChild(text);
             }
         },
         rowHeightDialog(value) {
@@ -230,7 +235,6 @@ export default {
         },
     },
     created() {
-        this.data = this.initData(this.dataSource)
         this.$on('updateItem', (data) => {
             this.saveItem(data, true)
         })
@@ -239,7 +243,12 @@ export default {
         })
     },
     mounted() {
-        this.init()
+        this.initData(this.dataSource).then(()=>{
+            this.loading = false
+            this.$nextTick(function () { //eslint-disable-line
+                this.init()
+            })
+        })
     },
     destroyed() {
         this.removeEvents()
