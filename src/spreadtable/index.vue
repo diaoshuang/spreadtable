@@ -21,9 +21,9 @@
                     </span>
                 </div>
             </div>
-            <div class="tool-item">
-                <select name="" id="" class="font-family-select" style="width:120px;"></select>
-                <select name="" id="" class="font-size-select" style="width:60px;"></select><br/>
+            <div v-if="false" class="tool-item">
+                <select class="font-family-select" style="width:120px;"></select>
+                <select class="font-size-select" style="width:60px;"></select><br/>
                 <div class="font-style-btn">
                     <span class="tool-btn" style="font-weight:bold;">B</span>
                     <span class="tool-btn" style="font-style:italic; border-left:1px solid #ddd; border-right:1px solid #ddd;">I</span>
@@ -31,16 +31,19 @@
                 </div>
             </div>
             <div class="tool-item">
-                <button @click="addImg">插入图片</button>
+                <button @click="addImg">
+                    <img src="../assets/img.png" width="50"> 插入图片
+                </button>
             </div>
         </div>
         <div class="fx">
             <div class="fx-focus">{{focusPosition}}</div>
-            <div class="fx-content-label">确定</div>
+            <div class="fx-content-label"><img src="../assets/close.png"></div>
+            <div class="fx-content-label"><img src="../assets/check.png"></div>
+            <div class="fx-content-label"><img src="../assets/function.png"></div>
             <div class="fx-content">
                 <div class="fx-content-input">
-                    <img src="../assets/fx.png">
-                    <input type="text">
+                    <input type="text" :style="'width:'+(canvasWidth-170)+'px;'" @focus="">
                 </div>
             </div>
         </div>
@@ -63,26 +66,26 @@
             </div>
         </div>
         <div v-else>
-            <div class='loader'>
-                <div class='loader_overlay'></div>
-                <div class='loader_cogs'>
-                    <div class='loader_cogs__top'>
-                        <div class='top_part'></div>
-                        <div class='top_part'></div>
-                        <div class='top_part'></div>
-                        <div class='top_hole'></div>
+            <div class="loader">
+                <div class="loader_overlay"></div>
+                <div class="loader_cogs">
+                    <div class="loader_cogs__top">
+                        <div class="top_part"></div>
+                        <div class="top_part"></div>
+                        <div class="top_part"></div>
+                        <div class="top_hole"></div>
                     </div>
-                    <div class='loader_cogs__left'>
-                        <div class='left_part'></div>
-                        <div class='left_part'></div>
-                        <div class='left_part'></div>
-                        <div class='left_hole'></div>
+                    <div class="loader_cogs__left">
+                        <div class="left_part"></div>
+                        <div class="left_part"></div>
+                        <div class="left_part"></div>
+                        <div class="left_hole"></div>
                     </div>
-                    <div class='loader_cogs__bottom'>
-                        <div class='bottom_part'></div>
-                        <div class='bottom_part'></div>
-                        <div class='bottom_part'></div>
-                        <div class='bottom_hole'>
+                    <div class="loader_cogs__bottom">
+                        <div class="bottom_part"></div>
+                        <div class="bottom_part"></div>
+                        <div class="bottom_part"></div>
+                        <div class="bottom_hole">
                             <!-- lol -->
                         </div>
                     </div>
@@ -92,17 +95,12 @@
         <div class="sheet">
 
         </div>
-        <div v-show="showMenu" class="right-menu" :style="{ top:menuPosition.top,left:menuPosition.left }">
+        <div v-show="showMenu&&(cornerClick||topClick||leftClick)" class="right-menu" :style="{ top:menuPosition.top,left:menuPosition.left }">
             <div class="right-menu" :style="menuPosition">
                 <ul>
                     <li v-if="cornerClick" @click="setWidthHeight">设置宽度和高度</li>
                     <li v-if="topClick" @click="cellWidthDialog=true">列宽</li>
                     <li v-if="leftClick" @click="rowHeightDialog=true">行高</li>
-                    <li>自定义菜单</li>
-                    <li>自定义菜单</li>
-                    <li>自定义菜单</li>
-                    <li>自定义菜单</li>
-                    <li>自定义菜单</li>
                 </ul>
             </div>
         </div>
@@ -189,6 +187,7 @@ export default {
             contextCell: null,
             setRowheight: 0,
             setCellWidth: 0,
+            fxFocus: false,
         }
     },
     computed: {
@@ -261,7 +260,6 @@ export default {
     methods: {
         copyDataFill() {
             this.hideInput()
-            this.focusInput()
             if (this.selectArea) {
                 this.$refs.inputSelect.innerHTML = ''
                 const selectCells = this.getCellsBySelect(this.selectArea)
@@ -912,14 +910,35 @@ export default {
     }
     .fx-content-label {
       display: inline-block;
+      vertical-align: middle;
+      height: 18px;
+      margin: 0 3px;
+      line-height: 27px;
+      cursor: pointer;
+      img {
+        height: 16px;
+      }
     }
     .fx-content {
       display: inline-block;
       position: absolute;
-      left: 150px;
-      right: 20px;
+      right: 0;
       height: 28px;
       line-height: 28px;
+      position: relative;
+      &:after {
+        content: " ";
+        position: absolute;
+        width: 1px;
+        height: 22px;
+        background-color: #ddd;
+        top: 4px;
+      }
+      input {
+        margin-left: 8px;
+        border: none;
+        outline: none;
+      }
     }
   }
   .sheet {

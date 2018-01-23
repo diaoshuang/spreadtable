@@ -93,6 +93,7 @@ export default {
         },
         handleMousedown(e) {
             this.save()
+            this.focusInput()
             const eX = e.clientX - this.canvasX
             const eY = e.clientY - this.canvasY
             for (const item of this.imageObjs) {
@@ -594,9 +595,8 @@ export default {
                 requestAnimationFrame(this.painted)
             }
             if (!text.hover) {
+                this.save()
                 this.copyDataFill()
-            } else {
-                this.focusInput()
             }
             this.mouseoverSet(eX, eY, e)
             this.clearDown()
