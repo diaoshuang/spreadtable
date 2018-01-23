@@ -49,9 +49,9 @@ export default {
                 this.verticalBar.size = 0
             } else {
                 this.verticalBar.size = canvasHeight * verticalRatio
-                if (this.verticalBar.size < 30) {
-                    this.verticalBar.size = 30
-                    verticalRatio = 30 / canvasHeight
+                if (this.verticalBar.size < 20) {
+                    this.verticalBar.size = 20
+                    verticalRatio = (canvasHeight - 20) / ((bodyHeight + config.height.bottom + config.height.columns) - canvasHeight)
                 }
             }
             this.verticalBar.k = verticalRatio
