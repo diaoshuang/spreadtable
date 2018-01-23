@@ -1,7 +1,7 @@
 <template>
     <div ref="spreadtable" class="spreadtable" :style="containerStyle" @click="hideMenu" @paste="doPaste">
         <div class="navbar">
-            <span v-for="item in navList" class="nav-item" :class="{'cur-nav':item===tool}" @click="changeTool(item)">{{item}}</span>
+            <span class="nav-item cur-nav">Spreadtable</span>
         </div>
         <div class="tool" v-if="tool==='开始'">
             <div class="tool-item">
@@ -30,9 +30,9 @@
                     <span class="tool-btn" style="text-decoration:underline;">U</span>
                 </div>
             </div>
-        </div>
-        <div class="tool" v-else-if="tool==='插入'">
-            <button @click="addImg">插入图片</button>
+            <div class="tool-item">
+                <button @click="addImg">插入图片</button>
+            </div>
         </div>
         <div class="fx">
             <div class="fx-focus">{{focusPosition}}</div>
@@ -279,9 +279,6 @@ export default {
                 this.$refs.inputSelect.appendChild(table)
             }
         },
-        changeTool(item) {
-            this.tool = item
-        },
         init() {
             this.initSize()
             if (this.hasSize) {
@@ -293,19 +290,26 @@ export default {
             }
         },
         getCellAt(x, y) {
-            let rowIndex = 0
-            let cellIndex = 0
-            for (const row of this.display.rows) {
-                if (y >= row.realY && y <= row.realY + row.height) {
+            let rowIndex = -1
+            let cellIndex = -1
+            const [eX, eY] = this.offset
+            for (const row of this.allRows) {
+                if (y >= row.y + eY && y <= row.y + eY + row.height) {
                     rowIndex = row.row
                     break
                 }
             }
-            for (const column of this.display.columns) {
-                if (x >= column.realX && x < column.realX + column.width) {
+            for (const column of this.allColumns) {
+                if (x >= column.x + eX && x < column.x + eX + column.width) {
                     cellIndex = column.cell
                     break
                 }
+            }
+            if (rowIndex === -1) {
+                rowIndex = this.allRows.length - 1
+            }
+            if (cellIndex === -1) {
+                cellIndex = this.allColumns.length - 1
             }
             return this.getFocusCell([rowIndex, cellIndex])
         },

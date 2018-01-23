@@ -23,12 +23,6 @@ export default {
                     const [x, y] = item.offset
                     item.x -= x - this.offset[0]
                     item.y -= y - this.offset[1]
-                    if (item.x < config.width.serial + 1) {
-                        item.x = config.width.serial + 1
-                    }
-                    if (item.y < config.height.columns + 1) {
-                        item.y = config.height.columns + 1
-                    }
                     item.offset = [...this.offset]
                 }
             }
@@ -413,12 +407,6 @@ export default {
             }
         },
         paintImageItem(ctx, item) {
-            if (item.x < config.width.serial + 2) {
-                item.x = config.width.serial + 2
-            }
-            if (item.y < config.height.columns + 2) {
-                item.y = config.height.columns + 2
-            }
             item.point = []
             item.point[0] = [item.x - 1, item.y - 1]
             item.point[1] = [item.x + (item.width) + 1, item.y - 1]

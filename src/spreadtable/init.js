@@ -24,7 +24,7 @@ export default {
                     console.log(dataSource)
                 } else {
                     let startY = config.height.columns
-                    for (let i = 0; i < 10000; i += 1) {
+                    for (let i = 0; i < 500; i += 1) {
                         const temp = []
                         const cellTemp = []
                         let startX = config.width.serial
@@ -86,7 +86,7 @@ export default {
                     this.allColumns = Object.freeze(allColumns)
                     this.allCells = Object.freeze(allCells)
                     this.data = Object.freeze(data)
-                    return true
+                    return result
                 })
                 .catch((e) => {
                     console.error(e) //eslint-disable-line

@@ -1,6 +1,8 @@
 import config from './config'
 import utils from './utils'
 
+function noop() {}
+
 export default {
     data() {
         return {
@@ -50,6 +52,9 @@ export default {
                     hover: false,
                 },
             },
+            autoScrollInterval: 0,
+            isAutoScroll: false,
+            mouseOutValue: 0,
         }
     },
     created() {
@@ -58,13 +63,13 @@ export default {
     methods: {
         initEvents() {
             this.$refs['canvas-plugin'].addEventListener(this.isFirefox ? 'DOMMouseScroll' : 'mousewheel', this.handleWheel)
-            this.$refs['canvas-plugin'].addEventListener('contextmenu', this.handleContextMenu, false)
             this.$refs['canvas-plugin'].addEventListener('dblclick', this.handleDoubleClick, false)
             this.$refs['canvas-plugin'].addEventListener('mousedown', this.handleMousedown, false)
             document.addEventListener('mousemove', this.handleMousemove, true)
             document.addEventListener('mouseup', this.handleMouseup, false)
             window.addEventListener('resize', this.handleResize, false)
             document.addEventListener('keydown', this.handleKeydown, false)
+            document.addEventListener('contextmenu', this.handleContextMenu, false)
         },
         removeEvents() {
             // window.removeEventListener('mousedown', this.handleMousedown, false)
@@ -72,50 +77,17 @@ export default {
             document.removeEventListener('mouseup', this.handleMouseup, false)
             window.removeEventListener('resize', this.handleResize, false)
             document.removeEventListener('keydown', this.handleKeydown, false)
+            document.removeEventListener('contextmenu', this.handleContextMenu, false)
         },
         handleWheel(e) {
+            e.preventDefault()
+            e.returnValue = false
             if (!this.isEditing) {
                 const { deltaX, deltaY } = e
                 if (Math.abs(deltaX) > Math.abs(deltaY)) {
-                    const lastScrollX = this.offset[0]
-                    if (this.offset[0] - deltaX > 0) {
-                        this.offset[0] = 0
-                    } else if (((this.bodyWidth + config.width.right + config.width.serial) - this.canvasWidth) + this.offset[0] < deltaX) {
-                        if (this.canvasWidth - this.bodyWidth < 0) {
-                            this.offset[0] = (this.horizontalBar.size - this.canvasWidth) / this.horizontalBar.k
-                        } else {
-                            e.preventDefault()
-                            e.returnValue = false
-                        }
-                    } else {
-                        e.preventDefault()
-                        e.returnValue = false
-                        this.offset[0] -= deltaX
-                    }
-                    if (lastScrollX !== this.offset[0]) {
-                        requestAnimationFrame(this.painted)
-                        this.$emit('scroll')
-                    }
+                    this.scrollX(deltaX)
                 } else {
-                    const lastScrollY = this.offset[1]
-                    if (lastScrollY - deltaY > 0) {
-                        this.offset[1] = 0
-                    } else if (((this.bodyHeight + config.height.bottom + config.height.columns) - this.canvasHeight) + lastScrollY < deltaY) {
-                        if (this.canvasHeight - this.bodyHeight < 0) {
-                            this.offset[1] = (this.verticalBar.size - this.canvasHeight) / this.verticalBar.k
-                        } else {
-                            e.preventDefault()
-                            e.returnValue = false
-                        }
-                    } else {
-                        e.preventDefault()
-                        e.returnValue = false
-                        this.offset[1] -= deltaY
-                    }
-                    if (lastScrollY !== this.offset[1]) {
-                        requestAnimationFrame(this.painted)
-                        this.$emit('scroll')
-                    }
+                    this.scrollY(deltaY)
                 }
             }
         },
@@ -173,25 +145,59 @@ export default {
                 row.down = true
                 const rowItem = this.getRowAt(eY)
                 if (rowItem) {
-                    row.obj = { ...rowItem }
-                    this.focusCell = [rowItem.row, 0]
-                    this.offset[0] = 0
-                    this.selectArea = { type: 0, x: config.width.serial, y: rowItem.realY, width: Infinity, height: rowItem.height, cell: 0, row: rowItem.row, offset: [...this.offset] }
-                    this.selectArea.rowCount = 1
-                    this.selectArea.cellCount = Infinity
-                    this.$emit('focus', this.allRows[rowItem.row].rowData)
+                    if (e.shiftKey) {
+                        if (this.selectArea && this.selectArea.width === Infinity && this.selectArea.row !== rowItem.row) {
+                            row.obj = { ...rowItem }
+                            this.offset[0] = 0
+                            const focusCellItem = this.getFocusCell(this.focusCell)
+                            this.focusCell = [focusCellItem.row, 0]
+                            this.selectArea.cellCount = Infinity
+                            this.selectArea.rowCount = Math.abs(focusCellItem.row - rowItem.row)
+                            if (focusCellItem.row > rowItem.row) {
+                                this.selectArea = { type: 1, x: config.width.serial, y: rowItem.realY, width: Infinity, height: (focusCellItem.realY - rowItem.realY) + focusCellItem.height, cell: 0, row: focusCellItem.row, offset: [...this.offset] }
+                            } else {
+                                this.selectArea = { type: 0, x: config.width.serial, y: focusCellItem.realY, width: Infinity, height: (rowItem.realY - focusCellItem.realY) + rowItem.height, cell: 0, row: focusCellItem.row, offset: [...this.offset] }
+                            }
+                            this.$emit('focus', this.allRows[rowItem.row].rowData)
+                        }
+                    } else {
+                        row.obj = { ...rowItem }
+                        this.focusCell = [rowItem.row, 0]
+                        this.offset[0] = 0
+                        this.selectArea = { type: 0, x: config.width.serial, y: rowItem.realY, width: Infinity, height: rowItem.height, cell: 0, row: rowItem.row, offset: [...this.offset] }
+                        this.selectArea.rowCount = 1
+                        this.selectArea.cellCount = Infinity
+                        this.$emit('focus', this.allRows[rowItem.row].rowData)
+                    }
                 }
             } else if (cell.hover) {
                 cell.down = true
                 const column = this.getColumnAt(eX)
                 if (column) {
-                    cell.obj = { ...column }
-                    this.focusCell = [0, column.cell]
-                    this.offset[1] = 0
-                    this.selectArea = { type: 0, x: column.realX, y: config.height.columns, width: column.width, height: Infinity, cell: column.cell, row: 0, offset: [...this.offset] }
-                    this.selectArea.rowCount = Infinity
-                    this.selectArea.cellCount = 1
-                    this.$emit('focus', this.allRows[0].rowData)
+                    if (e.shiftKey) {
+                        if (this.selectArea && this.selectArea.height === Infinity && this.selectArea.cell !== column.cell) {
+                            row.obj = { ...column }
+                            this.offset[1] = 0
+                            const focusCellItem = this.getFocusCell(this.focusCell)
+                            this.focusCell = [0, focusCellItem.cell]
+                            this.selectArea.cellCount = Math.abs(focusCellItem.cell - column.cell)
+                            this.selectArea.rowCount = Infinity
+                            if (focusCellItem.cell > column.cell) {
+                                this.selectArea = { type: 4, x: column.realX, y: config.height.columns, width: (focusCellItem.realX - column.realX) + focusCellItem.width, height: Infinity, cell: focusCellItem.cell, row: 0, offset: [...this.offset] }
+                            } else {
+                                this.selectArea = { type: 0, x: focusCellItem.realX, y: config.height.columns, width: (column.realX - focusCellItem.realX) + column.width, height: Infinity, cell: focusCellItem.cell, row: 0, offset: [...this.offset] }
+                            }
+                            this.$emit('focus', this.allRows[0].rowData)
+                        }
+                    } else {
+                        cell.obj = { ...column }
+                        this.focusCell = [0, column.cell]
+                        this.offset[1] = 0
+                        this.selectArea = { type: 0, x: column.realX, y: config.height.columns, width: column.width, height: Infinity, cell: column.cell, row: 0, offset: [...this.offset] }
+                        this.selectArea.rowCount = Infinity
+                        this.selectArea.cellCount = 1
+                        this.$emit('focus', this.allRows[0].rowData)
+                    }
                 }
             } else if (all.hover) {
                 this.focusCell = [0, 0]
@@ -291,12 +297,14 @@ export default {
                     }
                 }
             } else if (table.down) {
+                this.autoScroll(eX, eY, () => { this.doSelectArea(eX, eY + 10) })
                 this.doSelectArea(eX, eY)
             } else if (rowMove.down) {
                 // TODO
             } else if (cellMove.down) {
                 // TODO
             } else if (row.down) {
+                this.autoScroll(eX, eY)
                 const rowItem = this.getRowAt(eY)
                 if (rowItem) {
                     this.selectArea = { ...this.selectArea }
@@ -315,6 +323,7 @@ export default {
                     this.$emit('focus', this.allRows[rowItem.row].rowData)
                 }
             } else if (cell.down) {
+                this.autoScroll(eX, eY)
                 const column = this.getColumnAt(eX)
                 if (column) {
                     const temp = { ...this.selectArea }
@@ -335,32 +344,101 @@ export default {
                     }
                 }
             } else if (this.verticalBar.move) {
-                const height = this.canvasHeight - this.verticalBar.size
-                const moveHeight = this.verticalBar.y + (e.screenY - this.verticalBar.cursorY)
-                if (moveHeight > 0 && moveHeight < height) {
-                    this.verticalBar.y += e.screenY - this.verticalBar.cursorY
-                } else if (moveHeight <= 0) {
-                    this.verticalBar.y = 0
-                } else {
-                    this.verticalBar.y = height
-                }
-                this.verticalBar.cursorY = e.screenY
-                this.offset[1] = -this.verticalBar.y / this.verticalBar.k
+                this.scrollY(e.screenY - this.verticalBar.cursorY)
+                return
             } else if (this.horizontalBar.move) {
-                const width = this.canvasWidth - this.horizontalBar.size
-                const moveWidth = this.horizontalBar.x + (e.screenX - this.horizontalBar.cursorX)
-                if (moveWidth > 0 && moveWidth < width) {
-                    this.horizontalBar.x += e.screenX - this.horizontalBar.cursorX
-                } else if (moveWidth <= 0) {
-                    this.horizontalBar.x = 0
-                } else {
-                    this.horizontalBar.x = width
-                }
-                this.horizontalBar.cursorX = e.screenX
-                this.offset[0] = -this.horizontalBar.x / this.horizontalBar.k
+                this.scrollX(e.screenX - this.horizontalBar.cursorX)
+                return
             } else if (e.target.classList.contains('canvas-plugin')) {
                 this.mouseoverSet(eX, eY, e)
             }
+            requestAnimationFrame(this.painted)
+        },
+        autoScroll(eX, eY, callback = noop) {
+            if (eX < this.canvasWidth && eX > config.width.serial && eY < this.canvasHeight && eY > config.height.columns) {
+                clearInterval(this.autoScrollInterval)
+            } else if (eY > this.canvasHeight && eX > config.width.serial && eX < this.canvasWidth) {
+                let baseScrollValue = eY - this.canvasHeight
+                if (baseScrollValue > 200) {
+                    baseScrollValue = 200
+                }
+                if (this.mouseOutValue !== baseScrollValue) {
+                    this.mouseOutValue = baseScrollValue
+                    clearInterval(this.autoScrollInterval)
+                    this.autoScrollInterval = setInterval(() => {
+                        this.scrollY(10)
+                        callback()
+                    }, utils.lineEquation([0, 100], [100, 10], this.mouseOutValue))
+                }
+            } else if (eY < config.height.columns && eX > config.width.serial && eX < this.canvasWidth) {
+                let baseScrollValue = config.height.columns - eY
+                if (baseScrollValue > 200) {
+                    baseScrollValue = 200
+                }
+                if (this.mouseOutValue !== baseScrollValue) {
+                    this.mouseOutValue = baseScrollValue
+                    clearInterval(this.autoScrollInterval)
+                    this.autoScrollInterval = setInterval(() => {
+                        this.scrollY(-10)
+                        callback()
+                    }, utils.lineEquation([0, 100], [100, 10], this.mouseOutValue))
+                }
+            } else if (eX > this.canvasWidth && eY > config.height.columns && eY < this.canvasHeight) {
+                let baseScrollValue = eX - this.canvasWidth
+                if (baseScrollValue > 200) {
+                    baseScrollValue = 200
+                }
+                if (this.mouseOutValue !== baseScrollValue) {
+                    this.mouseOutValue = baseScrollValue
+                    clearInterval(this.autoScrollInterval)
+                    this.autoScrollInterval = setInterval(() => {
+                        this.scrollX(10)
+                        callback()
+                    }, utils.lineEquation([0, 30], [100, 10], this.mouseOutValue))
+                }
+            } else if (eX < config.width.serial && eY > config.height.columns && eY < this.canvasHeight) {
+                let baseScrollValue = config.width.serial - eX
+                if (baseScrollValue > 200) {
+                    baseScrollValue = 200
+                }
+                if (this.mouseOutValue !== baseScrollValue) {
+                    this.mouseOutValue = baseScrollValue
+                    clearInterval(this.autoScrollInterval)
+                    this.autoScrollInterval = setInterval(() => {
+                        this.scrollX(-10)
+                        callback()
+                    }, utils.lineEquation([0, 30], [100, 10], this.mouseOutValue))
+                }
+            }
+        },
+        scrollY(value) {
+            value *= this.verticalBar.k
+            const height = this.canvasHeight - this.verticalBar.size
+            const moveHeight = this.verticalBar.y + value
+            if (moveHeight > 0 && moveHeight < height) {
+                this.verticalBar.y += value
+            } else if (moveHeight <= 0) {
+                this.verticalBar.y = 0
+            } else {
+                this.verticalBar.y = height
+            }
+            this.verticalBar.cursorY += value
+            this.offset[1] = -this.verticalBar.y / this.verticalBar.k
+            requestAnimationFrame(this.painted)
+        },
+        scrollX(value) {
+            value *= this.horizontalBar.k
+            const width = this.canvasWidth - this.horizontalBar.size
+            const moveWidth = this.horizontalBar.x + value
+            if (moveWidth > 0 && moveWidth < width) {
+                this.horizontalBar.x += value
+            } else if (moveWidth <= 0) {
+                this.horizontalBar.x = 0
+            } else {
+                this.horizontalBar.x = width
+            }
+            this.horizontalBar.cursorX += value
+            this.offset[0] = -this.horizontalBar.x / this.horizontalBar.k
             requestAnimationFrame(this.painted)
         },
         mouseoverSet(eX, eY) {
@@ -522,6 +600,7 @@ export default {
             }
             this.mouseoverSet(eX, eY, e)
             this.clearDown()
+            clearInterval(this.autoScrollInterval)
         },
         handleResize() {
             this.initSize()
@@ -549,14 +628,14 @@ export default {
                 this.menuPosition.top = `${this.canvasHeight - menuObj[0].offsetHeight}px`
             }
 
-            if (this.mouse.rowMove.hover) {
+            if (this.mouse.rowMove.hover || this.mouse.row.hover) {
                 const row = this.getRowAt(eY)
                 if (row) {
                     this.setRowheight = row.height
                     this.contextRow = { ...row }
                     this.leftClick = true
                 }
-            } else if (this.mouse.cellMove.hover) {
+            } else if (this.mouse.cellMove.hover || this.mouse.cell.hover) {
                 const column = this.getColumnAt(eX)
                 if (column) {
                     this.setCellWidth = column.width
