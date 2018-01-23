@@ -203,9 +203,9 @@ export default {
                     ctx.moveTo(...mapPoint(0, y + height, FIX))
                     ctx.lineTo(...mapPoint(config.width.serial, y + height))
                     if (height > 10) {
-                        this.paintText(ctx, ...mapPoint(utils.half(config.width.serial), y + 10), [row + 1])
+                        this.paintText(ctx, ...mapPoint(utils.half(config.width.serial), y + 11), [row + 1])
                     } else if (height > 0) {
-                        this.paintText(ctx, ...mapPoint(utils.half(config.width.serial), y + 10), ['.'])
+                        this.paintText(ctx, ...mapPoint(utils.half(config.width.serial), y + 11), ['.'])
                     }
                 }
             }
@@ -311,14 +311,14 @@ export default {
                             }
                             ctx.fillStyle = '#fff'
                             if (!maxWidth) {
-                                ctx.fillRect(...mapPoint(cell.x + 2, cell.y + 1), ...mapSize(ctx.measureText(cell.paintText).width / 2, cell.height - 1))
+                                ctx.fillRect(...mapPoint(cell.realX + 2, cell.realY + 1), ...mapSize(ctx.measureText(cell.paintText).width / 2, cell.height - 1))
                             }
                             ctx.fillStyle = '#333'
-                            this.paintText(ctx, ...mapPoint(cell.x + 2, cell.y + 10), [cell.paintText], maxWidth * ratio)
+                            this.paintText(ctx, ...mapPoint(cell.realX + 3, cell.realY + 11), [cell.paintText], maxWidth * ratio)
                         } else {
                             ctx.textAlign = 'right'
                             ctx.fillStyle = '#333'
-                            this.paintText(ctx, ...mapPoint((cell.x + cell.width) - 3, cell.y + 10), [cell.paintText])
+                            this.paintText(ctx, ...mapPoint((cell.realX + cell.width) - 3, cell.realY + 11), [cell.paintText])
                         }
                     }
                 }
@@ -385,11 +385,11 @@ export default {
                                 ctx.fillRect(...mapPoint(item.realX + 3, item.realY + 1), ...mapSize(ctx.measureText(item.paintText).width / ratio, item.height - 1))
                             }
                             ctx.fillStyle = '#333'
-                            this.paintText(ctx, ...mapPoint(item.realX + 3, item.realY + 10), [item.paintText], maxWidth * ratio)
+                            this.paintText(ctx, ...mapPoint(item.realX + 3, item.realY + 11), [item.paintText], maxWidth * ratio)
                         } else {
                             ctx.textAlign = 'right'
                             ctx.fillStyle = '#333'
-                            this.paintText(ctx, ...mapPoint((item.realX + item.width) - 3, item.realY + 10), [item.paintText])
+                            this.paintText(ctx, ...mapPoint((item.realX + item.width) - 3, item.realY + 11), [item.paintText])
                         }
                     }
                 }

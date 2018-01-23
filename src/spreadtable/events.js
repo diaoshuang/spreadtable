@@ -46,6 +46,9 @@ export default {
                 all: {
                     hover: false,
                 },
+                text: {
+                    hover: false,
+                },
             },
         }
     },
@@ -75,12 +78,11 @@ export default {
                 const { deltaX, deltaY } = e
                 if (Math.abs(deltaX) > Math.abs(deltaY)) {
                     const lastScrollX = this.offset[0]
-                    const maxWidth = this.canvasWidth
                     if (this.offset[0] - deltaX > 0) {
                         this.offset[0] = 0
-                    } else if (((this.bodyWidth + config.width.right + config.width.serial) - maxWidth) + this.offset[0] < deltaX) {
-                        if (maxWidth - this.bodyWidth < 0) {
-                            this.offset[0] = maxWidth - (this.bodyWidth + config.width.right + config.width.serial)
+                    } else if (((this.bodyWidth + config.width.right + config.width.serial) - this.canvasWidth) + this.offset[0] < deltaX) {
+                        if (this.canvasWidth - this.bodyWidth < 0) {
+                            this.offset[0] = (this.horizontalBar.size - this.canvasWidth) / this.horizontalBar.k
                         } else {
                             e.preventDefault()
                             e.returnValue = false
@@ -96,12 +98,11 @@ export default {
                     }
                 } else {
                     const lastScrollY = this.offset[1]
-                    const maxHeight = this.canvasHeight
                     if (lastScrollY - deltaY > 0) {
                         this.offset[1] = 0
-                    } else if (((this.bodyHeight + config.height.bottom + config.height.columns) - maxHeight) + lastScrollY < deltaY) {
-                        if (maxHeight - this.bodyHeight < 0) {
-                            this.offset[1] = maxHeight - (this.bodyHeight + config.height.bottom + config.height.columns)
+                    } else if (((this.bodyHeight + config.height.bottom + config.height.columns) - this.canvasHeight) + lastScrollY < deltaY) {
+                        if (this.canvasHeight - this.bodyHeight < 0) {
+                            this.offset[1] = (this.verticalBar.size - this.canvasHeight) / this.verticalBar.k
                         } else {
                             e.preventDefault()
                             e.returnValue = false
@@ -125,7 +126,10 @@ export default {
             for (const item of this.imageObjs) {
                 item.focus = false
             }
-            const { image, rowDivide, cellDivide, table, focus, rowMove, cellMove, row, cell, all } = this.mouse
+            const { image, rowDivide, cellDivide, table, focus, rowMove, cellMove, row, cell, all, text } = this.mouse
+            if (!text.hover) {
+                this.hideInput()
+            }
             if (image.hover) {
                 image.down = true
                 for (let i = this.imageObjs.length - 1; i >= 0; i -= 1) {
@@ -158,7 +162,6 @@ export default {
                     if (cellItem) {
                         this.focusCell = [cellItem.row, cellItem.cell]
                         this.selectArea = null
-                        requestAnimationFrame(this.painted)
                         this.$emit('focus', cellItem.rowData)
                     }
                 }
@@ -214,8 +217,6 @@ export default {
             if (image.down) {
                 image.obj.img.x += e.movementX
                 image.obj.img.y += e.movementY
-                requestAnimationFrame(this.paintedImage)
-                return
             } else if (rowDivide.down) {
                 if (eY > rowDivide.obj.minY) {
                     rowDivide.obj.y = eY
@@ -298,6 +299,7 @@ export default {
             } else if (row.down) {
                 const rowItem = this.getRowAt(eY)
                 if (rowItem) {
+                    this.selectArea = { ...this.selectArea }
                     if (row.obj.row <= rowItem.row) {
                         this.selectArea.type = 0
                         this.selectArea.y = row.obj.realY
@@ -315,20 +317,49 @@ export default {
             } else if (cell.down) {
                 const column = this.getColumnAt(eX)
                 if (column) {
+                    const temp = { ...this.selectArea }
                     if (cell.obj.cell <= column.cell) {
-                        this.selectArea.x = cell.obj.realX
-                        this.selectArea.width = (column.realX - cell.obj.realX) + column.width
-                        this.selectArea.cell = cell.obj.cell
+                        temp.x = cell.obj.realX
+                        temp.width = (column.realX - cell.obj.realX) + column.width
+                        temp.cell = cell.obj.cell
                     } else {
-                        this.selectArea.x = column.realX
-                        this.selectArea.width = (cell.obj.realX - column.realX) + cell.obj.width
-                        this.selectArea.cell = column.cell
+                        temp.x = column.realX
+                        temp.width = (cell.obj.realX - column.realX) + cell.obj.width
+                        temp.cell = column.cell
                     }
-                    this.selectArea.cellCount = Math.abs(cell.obj.cell - column.cell)
-                    this.$emit('focus', this.allRows[0].rowData)
+                    temp.cellCount = Math.abs(cell.obj.cell - column.cell)
+
+                    if (!utils.compareObj(this.selectArea, temp)) {
+                        this.selectArea = temp
+                        this.$emit('focus', this.allRows[0].rowData)
+                    }
                 }
+            } else if (this.verticalBar.move) {
+                const height = this.canvasHeight - this.verticalBar.size
+                const moveHeight = this.verticalBar.y + (e.screenY - this.verticalBar.cursorY)
+                if (moveHeight > 0 && moveHeight < height) {
+                    this.verticalBar.y += e.screenY - this.verticalBar.cursorY
+                } else if (moveHeight <= 0) {
+                    this.verticalBar.y = 0
+                } else {
+                    this.verticalBar.y = height
+                }
+                this.verticalBar.cursorY = e.screenY
+                this.offset[1] = -this.verticalBar.y / this.verticalBar.k
+            } else if (this.horizontalBar.move) {
+                const width = this.canvasWidth - this.horizontalBar.size
+                const moveWidth = this.horizontalBar.x + (e.screenX - this.horizontalBar.cursorX)
+                if (moveWidth > 0 && moveWidth < width) {
+                    this.horizontalBar.x += e.screenX - this.horizontalBar.cursorX
+                } else if (moveWidth <= 0) {
+                    this.horizontalBar.x = 0
+                } else {
+                    this.horizontalBar.x = width
+                }
+                this.horizontalBar.cursorX = e.screenX
+                this.offset[0] = -this.horizontalBar.x / this.horizontalBar.k
             } else if (e.target.classList.contains('canvas-plugin')) {
-                this.mouseoverSet(eX, eY)
+                this.mouseoverSet(eX, eY, e)
             }
             requestAnimationFrame(this.painted)
         },
@@ -350,17 +381,20 @@ export default {
                 if (!hoverImage) {
                     let pointX = 0
                     let pointY = 0
+                    const focusCellItem = this.getFocusCell(this.focusCell)
                     if (this.selectArea) {
                         pointX = this.selectArea.x + this.selectArea.width
                         pointY = this.selectArea.y + this.selectArea.height
                     } else {
-                        const focusCellItem = this.getFocusCell(this.focusCell)
                         pointX = focusCellItem.realX + focusCellItem.width
                         pointY = focusCellItem.realY + focusCellItem.height
                     }
                     if (utils.isInRegion([eX, eY], [pointX - 3, pointY - 3], [pointX + 4, pointY + 4])) {
                         this.setCursor('crosshair')
                         this.mouse.focus.hover = true
+                    } else if (this.isEditing && utils.isInRegion([eX, eY], [focusCellItem.realX, focusCellItem.realY], [focusCellItem.realX + this.$refs.input.offsetWidth, focusCellItem.realY + this.$refs.input.offsetHeight])) {
+                        this.setCursor('text')
+                        this.mouse.text.hover = true
                     } else {
                         this.setCursor('cell')
                         this.mouse.table.hover = true
@@ -410,6 +444,8 @@ export default {
                     this.mouse[key].down = false
                 }
             }
+            this.horizontalBar.move = false
+            this.verticalBar.move = false
         },
         setCursor(type) {
             if (this.$refs['canvas-plugin'].style.cursor !== type) {
@@ -419,7 +455,7 @@ export default {
         handleMouseup(e) {
             const eX = e.clientX - this.canvasX
             const eY = e.clientY - this.canvasY
-            const { image, rowDivide, cellDivide, focus } = this.mouse
+            const { image, rowDivide, cellDivide, focus, text } = this.mouse
             if (image.down) {
                 image.down = false
                 image.obj = null
@@ -479,7 +515,12 @@ export default {
                 this.$emit('updateItems', copyData)
                 requestAnimationFrame(this.painted)
             }
-            this.mouseoverSet(eX, eY)
+            if (!text.hover) {
+                this.copyDataFill()
+            } else {
+                this.focusInput()
+            }
+            this.mouseoverSet(eX, eY, e)
             this.clearDown()
         },
         handleResize() {
@@ -530,7 +571,7 @@ export default {
         handleDoubleClick(e) {
             const eX = e.clientX - this.canvasX
             const eY = e.clientY - this.canvasY
-            if (eX > config.width.serial && eX < this.canvasWidth && eY > config.height.columns && eY < this.canvasHeight) {
+            if (!this.isEditing && eX > config.width.serial && eX < this.canvasWidth && eY > config.height.columns && eY < this.canvasHeight) {
                 const focusCellItem = this.getFocusCell(this.focusCell)
                 let { realX: x, realY: y } = focusCellItem
                 const { paintText, width, height } = focusCellItem

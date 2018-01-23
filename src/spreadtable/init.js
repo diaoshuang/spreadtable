@@ -11,71 +11,9 @@ export default {
         }
     },
     methods: {
-        initData1(dataSource) {
-            const data = []
-            const allRows = []
-            const allCells = []
-            const allColumns = []
-            this.bodyWidth = 0
-            this.bodyHeight = 0
-            if (dataSource && dataSource.length > 0) {
-                console.log(dataSource)
-            } else {
-                let startY = config.height.columns
-                for (let i = 0; i < 5000; i += 1) {
-                    const temp = []
-                    const cellTemp = []
-                    let startX = config.width.serial
-                    for (let j = 0; j < this.words.length; j += 1) {
-                        temp.push('')
-                        cellTemp.push({
-                            cell: j,
-                            row: i,
-                            text: '',
-                            font: '',
-                            paintText: '',
-                            type: 'text',
-                            style: '',
-                            x: startX,
-                            y: startY,
-                            width: config.width.cell,
-                            height: config.height.row,
-                        })
-                        if (i === 0) {
-                            this.bodyWidth += config.width.cell
-                            allColumns.push({
-                                width: config.width.cell,
-                                title: this.words[j],
-                                cell: j,
-                                hidden: false,
-                                height: config.height.columns,
-                                x: startX,
-                            })
-                        }
-                        startX += config.width.cell
-                    }
-                    allRows.push({
-                        row: i,
-                        height: config.height.row,
-                        style: '',
-                        rowData: temp,
-                        y: startY,
-                    })
-                    startY += config.height.row
-                    this.bodyHeight += config.height.row
-                    allCells.push(cellTemp)
-                    data.push(temp)
-                }
-            }
-            this.allColumns = allColumns
-            this.allRows = allRows
-            this.allCells = allCells
-            return data
-        },
         initData(dataSource) {
             this.loading = true
             return this.$worker.run((dataSource, config, words) => {
-                console.log(dataSource, config, words)
                 const data = []
                 const allRows = []
                 const allCells = []
@@ -86,7 +24,7 @@ export default {
                     console.log(dataSource)
                 } else {
                     let startY = config.height.columns
-                    for (let i = 0; i < 100000; i += 1) {
+                    for (let i = 0; i < 500; i += 1) {
                         const temp = []
                         const cellTemp = []
                         let startX = config.width.serial

@@ -44,10 +44,8 @@
                 </div>
             </div>
         </div>
-        <<<<<<< HEAD <div v-if="!loading" class="spreadtable-main">
-            =======
+        <div v-if="!loading" class="spreadtable-main">
             <div class="spreadtable-main" :style="`height:${canvasHeight+20}px;`">
-                >>>>>>> 03bab55fdeb573f6deee801e8d514379cfafd30d
                 <div class="input-content" :style="inputStyles" ref="input" contenteditable="true" @input="setValueTemp" @keydown.tab.prevent @keydown.enter.prevent @keydown.esc.prevent></div>
                 <div class="input-content" ref="inputSelect" contenteditable="true" @keydown.prevent></div>
                 <canvas v-if="hasSize" ref="canvas" class="canvas-spreadtable" :width="canvasWidth*ratio" :height="canvasHeight*ratio" :style="`width:${canvasWidth}px;height:${canvasHeight}px;`"></canvas>
@@ -63,42 +61,69 @@
                     </div>
                 </div>
             </div>
-            <div v-else>
-                正在加载数据...
-            </div>
-            <div class="sheet">sheet</div>
-            <div v-show="showMenu" class="right-menu" :style="{ top:menuPosition.top,left:menuPosition.left }">
-                <div class="right-menu" :style="menuPosition">
-                    <ul>
-                        <li v-if="cornerClick" @click="setWidthHeight">设置宽度和高度</li>
-                        <li v-if="topClick" @click="cellWidthDialog=true">列宽</li>
-                        <li v-if="leftClick" @click="rowHeightDialog=true">行高</li>
-                        <li>自定义菜单</li>
-                        <li>自定义菜单</li>
-                        <li>自定义菜单</li>
-                        <li>自定义菜单</li>
-                        <li>自定义菜单</li>
-                    </ul>
+        </div>
+        <div v-else>
+            <div class='loader'>
+                <div class='loader_overlay'></div>
+                <div class='loader_cogs'>
+                    <div class='loader_cogs__top'>
+                        <div class='top_part'></div>
+                        <div class='top_part'></div>
+                        <div class='top_part'></div>
+                        <div class='top_hole'></div>
+                    </div>
+                    <div class='loader_cogs__left'>
+                        <div class='left_part'></div>
+                        <div class='left_part'></div>
+                        <div class='left_part'></div>
+                        <div class='left_hole'></div>
+                    </div>
+                    <div class='loader_cogs__bottom'>
+                        <div class='bottom_part'></div>
+                        <div class='bottom_part'></div>
+                        <div class='bottom_part'></div>
+                        <div class='bottom_hole'>
+                            <!-- lol -->
+                        </div>
+                    </div>
                 </div>
             </div>
-            <modal v-if="rowHeightDialog" @close="rowHeightDialog = false" @submit="setHeight">
-                <div slot="header">
-                    行高
-                </div>
-                <div slot="body">
-                    <label class="input-label">行高</label>
-                    <input ref="setHeightInput" type="text" v-model="setRowheight" @keydown.tab.prevent @keydown.enter.prevent @keydown.esc.prevent>
-                </div>
-            </modal>
-            <modal v-if="cellWidthDialog" @close="cellWidthDialog = false" @submit="setWidth">
-                <div slot="header">
-                    列宽
-                </div>
-                <div slot="body">
-                    <label class="input-label">列宽</label>
-                    <input ref="setWidthInput" type="text" v-model="setCellWidth" @keydown.tab.prevent @keydown.enter.prevent @keydown.esc.prevent>
-                </div>
-            </modal>
+        </div>
+        <div class="sheet">
+
+        </div>
+        <div v-show="showMenu" class="right-menu" :style="{ top:menuPosition.top,left:menuPosition.left }">
+            <div class="right-menu" :style="menuPosition">
+                <ul>
+                    <li v-if="cornerClick" @click="setWidthHeight">设置宽度和高度</li>
+                    <li v-if="topClick" @click="cellWidthDialog=true">列宽</li>
+                    <li v-if="leftClick" @click="rowHeightDialog=true">行高</li>
+                    <li>自定义菜单</li>
+                    <li>自定义菜单</li>
+                    <li>自定义菜单</li>
+                    <li>自定义菜单</li>
+                    <li>自定义菜单</li>
+                </ul>
+            </div>
+        </div>
+        <modal v-if="rowHeightDialog" @close="rowHeightDialog = false" @submit="setHeight">
+            <div slot="header">
+                行高
+            </div>
+            <div slot="body">
+                <label class="input-label">行高</label>
+                <input ref="setHeightInput" type="text" v-model="setRowheight" @keydown.tab.prevent @keydown.enter.prevent @keydown.esc.prevent>
+            </div>
+        </modal>
+        <modal v-if="cellWidthDialog" @close="cellWidthDialog = false" @submit="setWidth">
+            <div slot="header">
+                列宽
+            </div>
+            <div slot="body">
+                <label class="input-label">列宽</label>
+                <input ref="setWidthInput" type="text" v-model="setCellWidth" @keydown.tab.prevent @keydown.enter.prevent @keydown.esc.prevent>
+            </div>
+        </modal>
     </div>
 </template>
 
@@ -193,34 +218,10 @@ export default {
         },
     },
     watch: {
-        focusCell() {
-            this.hideInput()
-            this.$refs.input.innerHTML = ''
-            this.focusInput()
+        focusCell(value) {
             if (!this.selectArea) {
-                const text = document.createTextNode(this.getCell(this.focusCell).text)
+                const text = document.createTextNode(this.getCell(value).text)
                 this.$refs.inputSelect.appendChild(text)
-            }
-        },
-        selectArea(value) {
-            this.hideInput()
-            this.$refs.input.innerHTML = ''
-            this.focusInput()
-            if (value) {
-                this.$refs.inputSelect.innerHTML = ''
-                const selectCells = this.getCellsBySelect(this.selectArea)
-
-                const table = document.createElement('table')
-                for (const row of selectCells) {
-                    const tr = document.createElement('tr')
-                    for (const cell of row) {
-                        const td = document.createElement('td')
-                        td.innerHTML = cell.text
-                        tr.appendChild(td)
-                    }
-                    table.appendChild(tr)
-                }
-                this.$refs.inputSelect.appendChild(table)
             }
         },
         rowHeightDialog(value) {
@@ -247,7 +248,7 @@ export default {
         })
     },
     mounted() {
-        this.initData(this.dataSource).then(()=>{
+        this.initData(this.dataSource).then(() => {
             this.loading = false
             this.$nextTick(function () { //eslint-disable-line
                 this.init()
@@ -258,6 +259,26 @@ export default {
         this.removeEvents()
     },
     methods: {
+        copyDataFill() {
+            this.hideInput()
+            this.focusInput()
+            if (this.selectArea) {
+                this.$refs.inputSelect.innerHTML = ''
+                const selectCells = this.getCellsBySelect(this.selectArea)
+
+                const table = document.createElement('table')
+                for (const row of selectCells) {
+                    const tr = document.createElement('tr')
+                    for (const cell of row) {
+                        const td = document.createElement('td')
+                        td.innerHTML = cell.text
+                        tr.appendChild(td)
+                    }
+                    table.appendChild(tr)
+                }
+                this.$refs.inputSelect.appendChild(table)
+            }
+        },
         changeTool(item) {
             this.tool = item
         },
@@ -411,7 +432,6 @@ export default {
             if (eX >= x && eX <= x + width && eY >= y && eY <= y + height) {
                 if (this.selectArea !== null) {
                     this.selectArea = null
-                    requestAnimationFrame(this.painted)
                 }
             } else {
                 if (eX < config.width.serial) {
@@ -443,7 +463,6 @@ export default {
 
                     if (!this.selectArea || !utils.compareObj(this.selectArea, temp)) {
                         this.selectArea = temp
-                        requestAnimationFrame(this.painted)
                     }
                 }
             }
@@ -558,6 +577,7 @@ export default {
         },
         hideInput() {
             this.isEditing = false
+            this.$refs.input.innerHTML = ''
             this.inputStyles = {
                 top: '-10000px',
                 left: '-10000px',
@@ -745,6 +765,7 @@ export default {
     }
     .canvas-spreadtable {
       z-index: 90;
+      background-color: #fff;
     }
     .canvas-plugin {
       z-index: 100;
@@ -760,6 +781,7 @@ export default {
       background-color: #fff;
       z-index: 95;
       line-height: 19px;
+      cursor: text;
     }
   }
   .right-menu {
@@ -941,6 +963,150 @@ export default {
       width: 14px;
       height: 100%;
     }
+  }
+}
+$pink: #237245;
+$blue: #999999;
+$yellow: #deb480;
+@mixin center {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  margin: auto;
+}
+@mixin hole {
+  border-radius: 100%;
+  background: white;
+  position: absolute;
+}
+.loader {
+  height: 100%;
+  position: relative;
+  margin: 250px auto;
+  width: 400px;
+  &_overlay {
+    width: 150px;
+    height: 150px;
+    background: transparent;
+    box-shadow: 0px 0px 0px 1000px rgba(255, 255, 255, 0.67),
+      0px 0px 19px 0px rgba(0, 0, 0, 0.16) inset;
+    border-radius: 100%;
+    z-index: -1;
+    @include center;
+  }
+  &_cogs {
+    z-index: -2;
+    width: 100px;
+    height: 100px;
+    top: -120px !important;
+    @include center;
+    &__top {
+      position: relative;
+      width: 100px;
+      height: 100px;
+      transform-origin: 50px 50px;
+      animation: rotate 10s infinite linear;
+      @for $i from 1 through 3 {
+        div:nth-of-type(#{$i}) {
+          transform: rotate($i * 30deg);
+        }
+      }
+      div.top_part {
+        width: 100px;
+        border-radius: 10px;
+        position: absolute;
+        height: 100px;
+        background: $pink;
+      }
+      div.top_hole {
+        width: 50px;
+        height: 50px;
+        @include hole;
+        @include center;
+      }
+    }
+    &__left {
+      position: relative;
+      width: 80px;
+      transform: rotate(16deg);
+      top: 28px;
+      transform-origin: 40px 40px;
+      animation: rotate_left 10s 0.1s infinite reverse linear;
+      left: -24px;
+      height: 80px;
+      @for $i from 1 through 3 {
+        div:nth-of-type(#{$i}) {
+          transform: rotate($i * 30deg);
+        }
+      }
+      div.left_part {
+        width: 80px;
+        border-radius: 6px;
+        position: absolute;
+        height: 80px;
+        background: $blue;
+      }
+      div.left_hole {
+        width: 40px;
+        height: 40px;
+        @include hole;
+        @include center;
+      }
+    }
+    &__bottom {
+      position: relative;
+      width: 60px;
+      transform: rotate(4deg);
+      top: -65px;
+      transform-origin: 30px 30px;
+      animation: rotate_right 10s 0.1s infinite linear;
+      left: 79px;
+      height: 60px;
+      @for $i from 1 through 3 {
+        div:nth-of-type(#{$i}) {
+          transform: rotate($i * 30deg);
+        }
+      }
+      div.bottom_part {
+        width: 60px;
+        border-radius: 5px;
+        position: absolute;
+        height: 60px;
+        background: $yellow;
+      }
+      div.bottom_hole {
+        width: 30px;
+        height: 30px;
+        @include hole;
+        @include center;
+      }
+    }
+  }
+}
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes rotate_left {
+  from {
+    transform: rotate(16deg);
+  }
+  to {
+    transform: rotate(376deg);
+  }
+}
+@keyframes rotate_right {
+  from {
+    transform: rotate(4deg);
+  }
+  to {
+    transform: rotate(364deg);
   }
 }
 </style>

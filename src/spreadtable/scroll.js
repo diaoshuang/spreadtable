@@ -1,3 +1,5 @@
+import config from './config'
+
 export default {
     data() {
         return {
@@ -24,47 +26,6 @@ export default {
         })
     },
     methods: {
-        scroll(e, type) {
-            if (type && this.verticalBar.size) {
-                if (e.offsetY < this.verticalBar.y) {
-                    let k = 15
-                    if (this.verticalBar.y - e.offsetY < 15) {
-                        k = this.verticalBar.y - e.offsetY
-                    }
-                    this.verticalBar.y -= k
-                    this.offset[1] = -this.verticalBar.y / this.verticalBar.k
-                    requestAnimationFrame(this.painted)
-                } else if (e.offsetY > this.verticalBar.y + this.verticalBar.size) {
-                    let k = 15
-                    if (e.offsetY - this.verticalBar.y - this.verticalBar.size < 15) {
-                        k = e.offsetY - this.verticalBar.y - this.verticalBar.size
-                    }
-                    this.verticalBar.y += k
-                    this.offset[1] = -this.verticalBar.y / this.verticalBar.k
-                    requestAnimationFrame(this.painted)
-                }
-            }
-            if (type === 0 && this.horizontalBar.size) {
-                if (e.offsetX < this.horizontalBar.x) {
-                    let k = 15
-                    if (this.horizontalBar.x - e.offsetX < 15) {
-                        k = this.horizontalBar.x - e.offsetX
-                    }
-                    this.horizontalBar.x -= k
-                    this.offset[0] = -this.horizontalBar.x / this.horizontalBar.k
-                    requestAnimationFrame(this.painted)
-                } else if (e.offsetX > this.horizontalBar.x + this.horizontalBar.size) {
-                    let k = 15
-                    if (e.offsetX - this.horizontalBar.x - this.horizontalBar.size < 15) {
-                        k = e.offsetX - this.horizontalBar.x - this.horizontalBar.size
-                    }
-                    this.horizontalBar.x += k
-                    this.horizontalBar.x += 15
-                    this.offset[0] = -this.horizontalBar.x / this.horizontalBar.k
-                    requestAnimationFrame(this.painted)
-                }
-            }
-        },
         dragMove(e, type) {
             if (type) {
                 this.verticalBar.move = true
@@ -75,22 +36,22 @@ export default {
             }
         },
         resetScrollBar(canvasWidth, canvasHeight, bodyWidth, bodyHeight) {
-            const horizontalRatio = canvasWidth / bodyWidth
+            const horizontalRatio = canvasWidth / (bodyWidth + config.width.right + config.width.serial)
             if (horizontalRatio >= 1) {
                 this.horizontalBar.size = 0
             } else {
-                this.horizontalBar.size = canvasWidth - ((bodyWidth - canvasWidth) * horizontalRatio)
+                this.horizontalBar.size = canvasWidth * horizontalRatio
             }
             this.horizontalBar.k = horizontalRatio
 
-            let verticalRatio = canvasHeight / bodyHeight
+            let verticalRatio = canvasHeight / (bodyHeight + config.height.bottom + config.height.columns)
             if (verticalRatio > 1) {
                 this.verticalBar.size = 0
             } else {
-                this.verticalBar.size = canvasHeight - ((bodyHeight - canvasHeight) * verticalRatio)
+                this.verticalBar.size = canvasHeight * verticalRatio
                 if (this.verticalBar.size < 30) {
                     this.verticalBar.size = 30
-                    verticalRatio = (canvasHeight - 30) / (bodyHeight - canvasHeight)
+                    verticalRatio = 30 / canvasHeight
                 }
             }
             this.verticalBar.k = verticalRatio
