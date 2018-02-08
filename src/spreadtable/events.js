@@ -1,7 +1,7 @@
 import config from './config'
 import utils from './utils'
 
-function noop() {}
+function noop() { }
 
 export default {
     data() {
@@ -170,6 +170,7 @@ export default {
                         this.selectArea.cellCount = Infinity
                         this.$emit('focus', this.allRows[rowItem.row].rowData)
                     }
+                    this.$emit('scroll')
                 }
             } else if (cell.hover) {
                 cell.down = true
@@ -199,6 +200,7 @@ export default {
                         this.selectArea.cellCount = 1
                         this.$emit('focus', this.allRows[0].rowData)
                     }
+                    this.$emit('scroll')
                 }
             } else if (all.hover) {
                 this.focusCell = [0, 0]
@@ -258,9 +260,9 @@ export default {
                         }
                     } else if ((eY >= y && eY < y + height) || !this.isInVerticalQuadrant(focusCellItem, eX, eY)) {
                         if (eX - startPoint[0] > 0) {
-                            focus.obj = { type: 0, copyType: 1, x, y, width: (cellItem.realX - x) + cellItem.width, height }
+                            focus.obj = { type: 0, copyType: 1, x, y, width: (cellItem.realX - x) + cellItem.width, height, row: rowIndex, cell: cellIndex }
                         } else if (eX - x < 0) {
-                            focus.obj = { type: 2, copyType: 1, x: cellItem.realX, y, width: (x - cellItem.realX) + width, height }
+                            focus.obj = { type: 2, copyType: 1, x: cellItem.realX, y, width: (x - cellItem.realX) + width, height, row: rowIndex, cell: cellIndex }
                         }
                         if (focus.obj) {
                             focus.obj.rowCount = this.selectArea.rowCount
@@ -345,13 +347,13 @@ export default {
                     }
                 }
             } else if (this.verticalBar.move) {
-                this.scrollY(e.screenY - this.verticalBar.cursorY)
+                this.scrollY((e.screenY - this.verticalBar.cursorY) / this.verticalBar.k)
                 return
             } else if (this.horizontalBar.move) {
-                this.scrollX(e.screenX - this.horizontalBar.cursorX)
+                this.scrollX((e.screenX - this.horizontalBar.cursorX) / this.horizontalBar.k)
                 return
             } else if (e.target.classList.contains('canvas-plugin')) {
-                this.mouseoverSet(eX, eY, e)
+                this.mouseoverSet(eX, eY)
             }
             requestAnimationFrame(this.painted)
         },
@@ -598,7 +600,7 @@ export default {
                 this.save()
                 this.copyDataFill()
             }
-            this.mouseoverSet(eX, eY, e)
+            this.mouseoverSet(eX, eY)
             this.clearDown()
             clearInterval(this.autoScrollInterval)
         },

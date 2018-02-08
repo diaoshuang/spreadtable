@@ -366,6 +366,12 @@ export default {
                 for (let j = cellsColumnStart; j < cellsColumnEnd; j += 1) {
                     const item = cells[i][j]
                     if (item.paintText) {
+                        const { height, y } = this.allRows[i]
+                        const { width, x } = this.allColumns[j]
+                        item.height = height
+                        item.width = width
+                        item.x = x
+                        item.y = y
                         item.realX = item.x + oX
                         item.realY = item.y + oY
                         if (item.type === 'text') {

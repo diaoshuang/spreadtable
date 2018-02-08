@@ -24,7 +24,7 @@ export default {
                     console.log(dataSource)
                 } else {
                     let startY = config.height.columns
-                    for (let i = 0; i < 500; i += 1) {
+                    for (let i = 0; i < 1000; i += 1) {
                         const temp = []
                         const cellTemp = []
                         let startX = config.width.serial

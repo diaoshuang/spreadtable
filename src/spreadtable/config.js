@@ -7,7 +7,7 @@ export default {
         center: [0, 0],
     },
     width: {
-        serial: 30,
+        serial: 35,
         scroll: 20,
         right: 40,
         cell: 80,

@@ -3,7 +3,12 @@
         <div class="navbar">
             <span class="nav-item cur-nav">Spreadtable</span>
         </div>
-        <div class="tool" v-if="tool==='开始'">
+        <div class="tool">
+            <div class="tool-item">
+                <div class="tool-btn">
+                    打开
+                </div>
+            </div>
             <div class="tool-item">
                 <div class="paste tool-btn">
                     <img src="../assets/paste.png"><br/>
@@ -21,7 +26,7 @@
                     </span>
                 </div>
             </div>
-            <div v-if="false" class="tool-item">
+            <div v-if="true" class="tool-item">
                 <select class="font-family-select" style="width:120px;"></select>
                 <select class="font-size-select" style="width:60px;"></select><br/>
                 <div class="font-style-btn">
@@ -31,26 +36,29 @@
                 </div>
             </div>
             <div class="tool-item">
-                <button @click="addImg">
-                    <img src="../assets/img.png" width="50"> 插入图片
-                </button>
+                <img src="../assets/img.png" width="50" @click="addImg">
+            </div>
+            <div v-if="true" class="tool-item">
+                <span class="tool-btn" style="margin-top:8px;">
+                    导出
+                </span>
             </div>
         </div>
         <div class="fx">
             <div class="fx-focus">{{focusPosition}}</div>
             <div class="fx-content-label"><img src="../assets/close.png"></div>
             <div class="fx-content-label"><img src="../assets/check.png"></div>
-            <div class="fx-content-label"><img src="../assets/function.png"></div>
+            <div class="fx-content-label" @click="handleFxIconClick"><img src="../assets/function.png"></div>
             <div class="fx-content">
                 <div class="fx-content-input">
-                    <input type="text" :style="'width:'+(canvasWidth-170)+'px;'" @focus="">
+                    <input ref="fxInput" type="text" v-model="fxValue" :style="'width:'+(canvasWidth-170)+'px;'" @focus="handleFxFocus">
                 </div>
             </div>
         </div>
         <div v-if="!loading" class="spreadtable-main">
             <div class="spreadtable-main" :style="`height:${canvasHeight+20}px;`">
                 <div class="input-content" :style="inputStyles" ref="input" contenteditable="true" @input="setValueTemp" @keydown.tab.prevent @keydown.enter.prevent @keydown.esc.prevent></div>
-                <div class="input-content" ref="inputSelect" contenteditable="true" @keydown.prevent></div>
+                <div class="input-content" ref="inputSelect" @keydown.prevent></div>
                 <canvas v-if="hasSize" ref="canvas" class="canvas-spreadtable" :width="canvasWidth*ratio" :height="canvasHeight*ratio" :style="`width:${canvasWidth}px;height:${canvasHeight}px;`"></canvas>
                 <canvas v-if="hasSize" ref="canvas-plugin" class="canvas-plugin" :width="canvasWidth*ratio" :height="canvasHeight*ratio" :style="`width:${canvasWidth}px;height:${canvasHeight}px;`"></canvas>
                 <div class="horizontal-container" :style="`width:${canvasWidth}px;`" @click="scroll($event,0)">
@@ -142,8 +150,6 @@ export default {
     components: { Modal },
     data() {
         return {
-            navList: ['开始', '插入', '布局', '视图', '数据'],
-            tool: '开始',
             data: [],
             allColumns: [],
             allRows: [],
@@ -188,6 +194,7 @@ export default {
             setRowheight: 0,
             setCellWidth: 0,
             fxFocus: false,
+            fxValue: '',
         }
     },
     computed: {
@@ -264,16 +271,34 @@ export default {
                 this.$refs.inputSelect.innerHTML = ''
                 const selectCells = this.getCellsBySelect(this.selectArea)
 
-                const table = document.createElement('table')
-                for (const row of selectCells) {
-                    const tr = document.createElement('tr')
-                    for (const cell of row) {
-                        const td = document.createElement('td')
-                        td.innerHTML = cell.text
-                        tr.appendChild(td)
+                let lastIndex = this.data.length - 1
+                for (let i = this.data.length - 1; i >= 0; i -= 1) {
+                    let flag = false
+                    for (const item of this.data[i]) {
+                        if (item) {
+                            flag = true
+                        }
                     }
-                    table.appendChild(tr)
+                    if (flag) {
+                        break
+                    } else {
+                        lastIndex -= 1
+                    }
                 }
+                const table = document.createElement('table')
+                for (let i = 0; i <= lastIndex; i += 1) {
+                    const row = selectCells[i]
+                    const tr = document.createElement('tr')
+                    if (row) {
+                        for (const cell of row) {
+                            const td = document.createElement('td')
+                            td.innerHTML = cell.text
+                            tr.appendChild(td)
+                        }
+                        table.appendChild(tr)
+                    }
+                }
+
                 this.$refs.inputSelect.appendChild(table)
             }
         },
@@ -693,7 +718,7 @@ export default {
         addImg() {
             this.imageObjs.push({
                 id: Date.now(),
-                url: 'http://www.baidu.com/img/bd_logo1.png',
+                url: 'https://cn.vuejs.org/images/logo.png',
                 x: 100,
                 y: 100,
                 offset: [...this.offset],
@@ -741,6 +766,17 @@ export default {
             this.rowHeightDialog = false
         },
         setWidthHeight() {
+
+        },
+        handleFxFocus() {
+            this.fxFocus = true
+        },
+        handleFxBlur() {
+            this.fxFocus = false
+        },
+        handleFxIconClick() {
+            this.$refs.fxInput.focus()
+            this.fxValue = '='
         },
     },
 }
@@ -863,6 +899,7 @@ export default {
       padding: 3px;
       text-align: center;
       font-size: 12px;
+      cursor: pointer;
       &:hover {
         background-color: #dedede;
       }
