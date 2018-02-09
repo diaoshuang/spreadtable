@@ -142,8 +142,8 @@ export default {
                         }
                     }
                     const stepNum = []
-                    for (let i = 0; i < beforeCells[0].length; i += 1) {
-                        stepNum.push(beforeCells[beforeCells.length - 1][i].text)
+                    for (let i = 0; i < beforeCells.length; i += 1) {
+                        stepNum.push(beforeCells[i][beforeCells[i].length - 1].text)
                     }
                     for (let i = 0; i < cells.length; i += 1) {
                         const temp = []
@@ -154,8 +154,8 @@ export default {
                             if (rule.type === 0 || rule.type === 1) {
                                 value = rule.items[j % rule.items.length].text
                             } else if (rule.type === 2) {
-                                value = stepNum[index] + rule.step
-                                stepNum[index] = value
+                                value = stepNum[i] + rule.step
+                                stepNum[i] = value
                             }
                             temp.push({
                                 anchor: [item.row, item.cell],
