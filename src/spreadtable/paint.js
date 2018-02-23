@@ -54,7 +54,7 @@ export default {
         paintMain(ctx, pluginCtx, columns, rows, cells) {
             const { canvasWidth, canvasHeight, ratio, selectArea, offset: [oX, oY],
                 focusCell, mouse, imageObjs } = this
-            const focusCellItem = this.getFocusCell(focusCell)
+            const focusCellItem = this.getPositionCell(focusCell)
             ctx.beginPath()
             ctx.lineWidth = 1 * ratio
             ctx.strokeStyle = '#cecece'

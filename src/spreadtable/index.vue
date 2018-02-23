@@ -51,7 +51,7 @@
             <div class="fx-content-label" @click="handleFxIconClick"><img src="../assets/function.png"></div>
             <div class="fx-content">
                 <div class="fx-content-input">
-                    <input ref="fxInput" type="text" v-model="fxValue" :style="'width:'+(canvasWidth-170)+'px;'" @focus="handleFxFocus">
+                    <input ref="fxInput" type="text" v-model="fxValue" :style="'width:'+(canvasWidth-170)+'px;'" @focus="handleFxFocus" @keyup="handleFxKeyup" @blur="handleFxBlur" @input="handleFxInput">
                 </div>
             </div>
         </div>
@@ -144,6 +144,9 @@ import operation from './operation'
 import utils from './utils'
 import Modal from './Modal'
 
+const FormulaParser = require('hot-formula-parser').Parser //eslint-disable-line
+const parser = new FormulaParser()
+
 export default {
     props: ['dataSource', 'dataColumns', 'options'],
     mixins: [init, display, paint, events, scroll, operation],
@@ -195,6 +198,10 @@ export default {
             setCellWidth: 0,
             fxFocus: false,
             fxValue: '',
+            fxEnter: false,
+
+            parseCell: [0, 0],
+            expressionCell: [],
         }
     },
     computed: {
@@ -217,7 +224,7 @@ export default {
             return this.canvasWidth > 0 && this.canvasHeight > 0
         },
         focusCellItem() {
-            return this.getFocusCell(this.focusCell)
+            return this.getPositionCell(this.focusCell)
         },
         focusPosition() {
             return this.words[this.focusCell[1]] + (this.focusCell[0] + 1)
@@ -227,8 +234,10 @@ export default {
         focusCell(value) {
             if (!this.selectArea) {
                 const text = document.createTextNode(this.getCell(value).text)
+                this.$refs.inputSelect.innerHTML = ''
                 this.$refs.inputSelect.appendChild(text)
             }
+            this.fxValue = this.getCell(this.focusCell).text
         },
         rowHeightDialog(value) {
             if (value) {
@@ -252,6 +261,61 @@ export default {
         this.$on('updateItems', (data) => {
             this.saveItems(data, true)
         })
+        parser.on('callCellValue', (cellCoord, done) => {
+            const focusCellItem = this.getCell(this.parseCell)
+            if (focusCellItem && !focusCellItem.cellCoord) {
+                focusCellItem.cellCoord = []
+            }
+            focusCellItem.cellCoord.push(cellCoord)
+            if (this.expressionCell.findIndex(item => item === focusCellItem) === -1) {
+                this.expressionCell.push(focusCellItem)
+            }
+            let value = this.data[cellCoord.row.index][cellCoord.column.index]
+            if (value) {
+                if ((`${value}`).indexOf('=') === 0) {
+                    const result = parser.parse(value.replace('=', ''))
+                    if (result.error) {
+                        value = result.error
+                    } else {
+                        value = result.result
+                    }
+                }
+                done(value)
+            } else {
+                done(0)
+            }
+        })
+        parser.on('callRangeValue', (startCellCoord, endCellCoord, done) => {
+            const focusCellItem = this.getCell(this.parseCell)
+            if (focusCellItem && !focusCellItem.cellCoord) {
+                focusCellItem.cellCoord = []
+            }
+            focusCellItem.cellCoord.push([startCellCoord, endCellCoord])
+            if (this.expressionCell.findIndex(item => item === focusCellItem) === -1) {
+                this.expressionCell.push(focusCellItem)
+            }
+            const fragment = []
+            for (let row = startCellCoord.row.index; row <= endCellCoord.row.index; row += 1) {
+                const rowData = this.data[row]
+                const colFragment = []
+                for (let col = startCellCoord.column.index; col <= endCellCoord.column.index; col += 1) {
+                    let value = rowData[col]
+                    if ((`${value}`).indexOf('=') === 0) {
+                        const result = parser.parse(value.replace('=', ''))
+                        if (result.error) {
+                            value = result.error
+                        } else {
+                            value = result.result
+                        }
+                    }
+                    colFragment.push(value)
+                }
+                fragment.push(colFragment)
+            }
+            if (fragment) {
+                done(fragment)
+            }
+        })
     },
     mounted() {
         this.initData(this.dataSource).then(() => {
@@ -266,7 +330,7 @@ export default {
     },
     methods: {
         copyDataFill() {
-            this.hideInput()
+            // this.hideInput()
             if (this.selectArea) {
                 this.$refs.inputSelect.innerHTML = ''
                 const selectCells = this.getCellsBySelect(this.selectArea)
@@ -298,7 +362,7 @@ export default {
                         table.appendChild(tr)
                     }
                 }
-
+                this.$refs.inputSelect.innerHTML = ''
                 this.$refs.inputSelect.appendChild(table)
             }
         },
@@ -334,7 +398,7 @@ export default {
             if (cellIndex === -1) {
                 cellIndex = this.allColumns.length - 1
             }
-            return this.getFocusCell([rowIndex, cellIndex])
+            return this.getPositionCell([rowIndex, cellIndex])
         },
         getRowAt(y) {
             for (const row of this.display.rows) {
@@ -344,7 +408,7 @@ export default {
             }
             return null
         },
-        getFocusCell(focusCell) {
+        getPositionCell(focusCell) {
             const cell = this.getCell(focusCell)
             const { height, y } = this.allRows[focusCell[0]]
             const { width, x } = this.allColumns[focusCell[1]]
@@ -455,7 +519,7 @@ export default {
             return { focusRow, focusColumn }
         },
         doSelectArea(eX, eY) {
-            const { width, height, row, cell: cellIndex, realX: x, realY: y } = this.getFocusCell(this.focusCell)
+            const { width, height, row, cell: cellIndex, realX: x, realY: y } = this.getPositionCell(this.focusCell)
             if (eX >= x && eX <= x + width && eY >= y && eY <= y + height) {
                 if (this.selectArea !== null) {
                     this.selectArea = null
@@ -496,7 +560,7 @@ export default {
         },
         setValueTemp(e) {
             this.valueTemp = e.target.innerText
-            const focusCellItem = this.getFocusCell(this.focusCell)
+            const focusCellItem = this.getPositionCell(this.focusCell)
             const { width, height, row, cell } = focusCellItem
             let { realX: x, realY: y } = focusCellItem
             if (x < config.width.serial) {
@@ -516,6 +580,7 @@ export default {
                 if (!this.isEditing) {
                     this.showInput(x, y, width, height)
                 }
+                this.fxValue = this.valueTemp
             } else if (!this.isEditing) {
                 this.isPaste = false
                 const objE = document.createElement('div')
@@ -571,7 +636,7 @@ export default {
                 }
 
                 startRowIndex -= 1
-                const lastCell = this.getFocusCell([startRowIndex, lastCellIndex])
+                const lastCell = this.getPositionCell([startRowIndex, lastCellIndex])
                 if (startRowIndex - row > 1 || lastCellIndex - cell > 0) {
                     this.selectArea = { type: 0, x, y, width: (lastCell.realX - x) + lastCell.width, height: (lastCell.realY - y) + lastCell.height, cell, row, offset: [...this.offset] }
                     this.selectArea.RowCount = startRowIndex - row
@@ -660,13 +725,56 @@ export default {
             this.$emit('updateValue', returnData)
         },
         setCellItemByKey(anchor, value) {
+            if (typeof value !== 'number') {
+                this.allCells[anchor[0]][anchor[1]].text = (`${value}`).toUpperCase()
+            } else {
+                this.allCells[anchor[0]][anchor[1]].text = value
+            }
+            const cell = this.getCell(anchor)
+            delete cell.cellCoord
+            const index = this.expressionCell.findIndex(item => item === cell)
+            if (index !== -1) {
+                this.expressionCell.splice(index, 1)
+            }
+            if ((`${value}`).indexOf('=') === 0 && (!this.fxFocus || this.fxEnter)) {
+                this.fxEnter = false
+                this.parseCell = [...anchor]
+                const result = parser.parse(value.replace('=', ''))
+                if (result.error) {
+                    value = result.error
+                } else {
+                    value = result.result
+                }
+            }
             if (this.numberReg.test(value) || !isNaN(value)) {
                 this.allCells[anchor[0]][anchor[1]].type = 'number'
             } else {
                 this.allCells[anchor[0]][anchor[1]].type = 'text'
             }
-            this.allCells[anchor[0]][anchor[1]].text = value
             this.allCells[anchor[0]][anchor[1]].paintText = [value]
+            loop:for (const item of this.expressionCell) {
+                for (const coord of item.cellCoord) {
+                    if (coord instanceof Array) {
+                        const startCoord = coord[0]
+                        const endCoord = coord[1]
+                        if (anchor[0] >= startCoord.row.index && anchor[0] <= endCoord.row.index && anchor[1] >= startCoord.column.index && anchor[1] <= endCoord.column.index) {
+                            this.doParseExpression(item)
+                            continue loop
+                        }
+                    } else if (anchor[0] === coord.row.index && anchor[1] === coord.column.index) {
+                        this.doParseExpression(item)
+                        continue loop
+                    }
+                }
+            }
+        },
+        doParseExpression(item) {
+            const result = parser.parse(item.text.replace('=', ''))
+            if (result.error) {
+                item.paintText = [result.error]
+            } else {
+                item.paintText = [result.result]
+            }
         },
         isInVerticalQuadrant(focusCell, x, y) {
             const startPoint = [focusCell.x, focusCell.y]
@@ -768,15 +876,27 @@ export default {
         setWidthHeight() {
 
         },
+        handleFxIconClick() {
+            this.$refs.fxInput.focus()
+            this.fxValue = '='
+        },
         handleFxFocus() {
             this.fxFocus = true
         },
         handleFxBlur() {
             this.fxFocus = false
+            this.$emit('updateItem', {
+                anchor: [...this.focusCell],
+                value: this.fxValue,
+            })
         },
-        handleFxIconClick() {
-            this.$refs.fxInput.focus()
-            this.fxValue = '='
+        handleFxKeyup() {
+        },
+        handleFxInput() {
+            this.$emit('updateItem', {
+                anchor: [...this.focusCell],
+                value: this.fxValue,
+            })
         },
     },
 }
