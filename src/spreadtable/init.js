@@ -1,6 +1,6 @@
 import Vue from 'vue'
-import config from './config'
 import VueWorker from 'vue-worker'
+import config from './config'
 
 Vue.use(VueWorker)
 

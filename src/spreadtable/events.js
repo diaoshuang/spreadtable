@@ -50,6 +50,9 @@ export default {
                 text: {
                     hover: false,
                 },
+                expression: {
+                    down: false,
+                },
             },
             autoScrollInterval: 0,
             isAutoScroll: false,
@@ -65,6 +68,7 @@ export default {
             this.$refs['canvas-plugin'].addEventListener('dblclick', this.handleDoubleClick, false)
             this.$refs['canvas-plugin'].addEventListener('mousedown', this.handleMousedown, false)
             document.addEventListener('mousemove', this.handleMousemove, true)
+            document.addEventListener('mousedown', this.handleClick, true)
             document.addEventListener('mouseup', this.handleMouseup, false)
             window.addEventListener('resize', this.handleResize, false)
             document.addEventListener('keydown', this.handleKeydown, false)
@@ -72,6 +76,7 @@ export default {
         },
         removeEvents() {
             // window.removeEventListener('mousedown', this.handleMousedown, false)
+            document.removeEventListener('mousedown', this.handleClick, true)
             document.removeEventListener('mousemove', this.handleMousemove, true)
             document.removeEventListener('mouseup', this.handleMouseup, false)
             window.removeEventListener('resize', this.handleResize, false)
@@ -90,13 +95,57 @@ export default {
                 }
             }
         },
+        handleClick(e) {
+            this.save()
+            this.hideInput()
+            if (this.expressionSelect) {
+                if (this.fxFocus) {
+                    this.focusFxInput()
+                } else {
+                    this.focusInput()
+                }
+                const eX = e.clientX - this.canvasX
+                const eY = e.clientY - this.canvasY
+                if (this.mouse.table.hover) {
+                    this.mouse.expression.down = true
+                    if (e.shiftKey) {
+                        this.doSelectArea(eX, eY)
+                    } else {
+                        const cellItem = this.getCellAt(eX, eY)
+                        if (cellItem) {
+                            if (this.expressionSelectDone) {
+                                this.expressionItems[this.expressionItems.length - 1] = [cellItem.row, cellItem.cell]
+                            } else {
+                                this.expressionSelectDone = true
+                                this.expressionItems.push([cellItem.row, cellItem.cell])
+                            }
+                            if (this.isFirstFxfocus) {
+                                this.isFirstFxfocus = false
+                                if (!this.operatorReg.test(`${this.fxValue}`.substr(this.fxValue.length - 1))) {
+                                    this.oldFxValue += '+'
+                                    this.fxValue = `${this.oldFxValue}+${this.words[cellItem.cell]}${cellItem.row + 1}`
+                                }
+                            } else {
+                                this.fxValue = `${this.oldFxValue}${this.words[cellItem.cell]}${cellItem.row + 1}`
+                            }
+
+                            requestAnimationFrame(this.painted)
+                        }
+                    }
+                }
+            }
+        },
         handleMousedown(e) {
+            if (this.expressionSelect) {
+                return
+            }
             if (this.fxFocus) {
                 this.fxEnter = true
                 this.$emit('updateItem', {
                     anchor: [...this.focusCell],
                     value: this.fxValue,
                 })
+                this.fxFocus = false
             }
             this.save()
             this.focusInput()
@@ -801,6 +850,9 @@ export default {
                 } else {
                     if (this.fxFocus) {
                         this.fxEnter = true
+                        this.expressionItems = []
+                        this.expressionSelect = false
+                        this.expressionSelectDone = false
                         this.$emit('updateItem', {
                             anchor: [...this.focusCell],
                             value: this.fxValue,
@@ -815,6 +867,10 @@ export default {
                     this.rowHeightDialog = false
                 } else if (this.cellWidthDialog) {
                     this.cellWidthDialog = false
+                } else if (this.fxFocus) {
+                    this.fxValue = ''
+                    this.focusInput()
+                    this.$refs.fxInput.blur()
                 } else {
                     this.hideInput()
                     this.$refs.input.innerHTML = ''

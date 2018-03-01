@@ -46,8 +46,8 @@
         </div>
         <div class="fx">
             <div class="fx-focus">{{focusPosition}}</div>
-            <div class="fx-content-label"><img src="../assets/close.png"></div>
-            <div class="fx-content-label"><img src="../assets/check.png"></div>
+            <!-- <div class="fx-content-label"><img src="../assets/close.png"></div>
+            <div class="fx-content-label"><img src="../assets/check.png"></div> -->
             <div class="fx-content-label" @click="handleFxIconClick"><img src="../assets/function.png"></div>
             <div class="fx-content">
                 <div class="fx-content-input">
@@ -202,6 +202,12 @@ export default {
 
             parseCell: [0, 0],
             expressionCell: [],
+            expressionSelect: false,
+            expressionItems: [],
+            oldFxValue: '',
+            expressionSelectDone: false,
+            operatorReg: /^[=:\+\-\*/]$/, //eslint-disable-line
+            isFirstFxfocus: false,
         }
     },
     computed: {
@@ -253,6 +259,23 @@ export default {
                  })
             }
         },
+        fxValue(value) {
+            if (`${value}`.indexOf('=') === 0 && (this.fxFocus || this.isEditing)) {
+                this.isFirstFxfocus = false
+                console.log(`${value}`.substr(value.length - 1))
+                if (this.operatorReg.test(`${value}`.substr(value.length - 1))) {
+                    this.oldFxValue = value
+                    this.expressionSelectDone = false
+                }
+                this.expressionSelect = true
+                console.log(this.oldFxValue)
+            } else {
+                this.expressionSelect = false
+            }
+        },
+        fxFocus(value) {
+            this.isFirstFxfocus = value
+        },
     },
     created() {
         this.$on('updateItem', (data) => {
@@ -277,7 +300,7 @@ export default {
                     if (result.error) {
                         value = result.error
                     } else {
-                        value = result.result
+                        value = parseFloat(result.result.toFixed(2))
                     }
                 }
                 done(value)
@@ -305,7 +328,7 @@ export default {
                         if (result.error) {
                             value = result.error
                         } else {
-                            value = result.result
+                            value = parseFloat(result.result.toFixed(2))
                         }
                     }
                     colFragment.push(value)
@@ -680,6 +703,11 @@ export default {
                 this.$refs.input.focus()
             }, 0)
         },
+        focusFxInput() {
+            setTimeout(() => {
+                this.$refs.fxInput.focus()
+            }, 0)
+        },
         save() {
             if (this.isEditing) {
                 if (this.$refs.input.innerText !== this.allCells[this.focusCell[0]][this.focusCell[1]].text) {
@@ -726,7 +754,11 @@ export default {
         },
         setCellItemByKey(anchor, value) {
             if (typeof value !== 'number') {
-                this.allCells[anchor[0]][anchor[1]].text = (`${value}`).toUpperCase()
+                if ((`${value}`).indexOf('=') === 0) {
+                    this.allCells[anchor[0]][anchor[1]].text = (`${value}`).toUpperCase()
+                } else {
+                    this.allCells[anchor[0]][anchor[1]].text = value
+                }
             } else {
                 this.allCells[anchor[0]][anchor[1]].text = value
             }
@@ -736,14 +768,14 @@ export default {
             if (index !== -1) {
                 this.expressionCell.splice(index, 1)
             }
-            if ((`${value}`).indexOf('=') === 0 && (!this.fxFocus || this.fxEnter)) {
+            if ((`${value}`).indexOf('=') === 0 && value.length > 1 && (!this.fxFocus || this.fxEnter)) {
                 this.fxEnter = false
                 this.parseCell = [...anchor]
                 const result = parser.parse(value.replace('=', ''))
                 if (result.error) {
                     value = result.error
                 } else {
-                    value = result.result
+                    value = parseFloat(result.result.toFixed(4))
                 }
             }
             if (this.numberReg.test(value) || !isNaN(value)) {
@@ -773,7 +805,7 @@ export default {
             if (result.error) {
                 item.paintText = [result.error]
             } else {
-                item.paintText = [result.result]
+                item.paintText = [parseFloat(result.result.toFixed(2))]
             }
         },
         isInVerticalQuadrant(focusCell, x, y) {
@@ -882,13 +914,19 @@ export default {
         },
         handleFxFocus() {
             this.fxFocus = true
+            // if (`${this.fxValue}`.indexOf('=') === 0) {
+            //     this.oldFxValue = this.fxValue
+            //     this.expressionSelect = true
+            // } else {
+            //     this.expressionSelect = false
+            // }
         },
         handleFxBlur() {
-            this.fxFocus = false
-            this.$emit('updateItem', {
-                anchor: [...this.focusCell],
-                value: this.fxValue,
-            })
+            // this.fxFocus = false
+            // this.$emit('updateItem', {
+            //     anchor: [...this.focusCell],
+            //     value: this.fxValue,
+            // })
         },
         handleFxKeyup() {
         },
